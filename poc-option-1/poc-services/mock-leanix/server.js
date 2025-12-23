@@ -240,9 +240,9 @@ app.get('/requirements', (req, res) => {
 });
 
 app.get('/requirements/:id', (req, res) => {
-  const req = requirements.find(r => r.id === req.params.id);
-  if (req) {
-    res.json({ data: req });
+  const requirement = requirements.find(r => r.id === req.params.id);
+  if (requirement) {
+    res.json({ data: requirement });
   } else {
     res.status(404).json({ error: 'Requirement not found' });
   }

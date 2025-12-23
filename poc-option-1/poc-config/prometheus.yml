@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'neo4j'
+    static_configs:
+      - targets: ['neo4j:7474']
+
+  - job_name: 'graphql-api'
+    static_configs:
+      - targets: ['graphql-api:4000']
+
+  - job_name: 'sync-service'
+    static_configs:
+      - targets: ['sync-service:3001']
+
+  - job_name: 'code-parser'
+    static_configs:
+      - targets: ['code-parser:3002']
+
+  - job_name: 'diagram-parser'
+    static_configs:
+      - targets: ['diagram-parser:3003']
