@@ -1,5 +1,5 @@
 const express = require('express');
-const { graphqlHTTP } = require('express-graphql');
+const { createHandler } = require('graphql-http/lib/use/express');
 const { buildSchema } = require('graphql');
 const neo4j = require('neo4j-driver');
 const { Pool } = require('pg');
@@ -300,10 +300,9 @@ app.get('/health', (req, res) => {
 });
 
 // GraphQL endpoint
-app.use('/graphql', graphqlHTTP({
+app.all('/graphql', createHandler({
   schema: schema,
   rootValue: root,
-  graphiql: true, // Enable GraphiQL interface
 }));
 
 // Initialize and start server
