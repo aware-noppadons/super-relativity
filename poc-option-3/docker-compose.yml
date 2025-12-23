@@ -1,0 +1,214 @@
+version: '3.8'
+
+# Super Relativity POC - Option 3 (Custom Neo4j Solution)
+# Full custom platform built from scratch
+
+services:
+  # ============================================================================
+  # NEO4J - Core graph database
+  # ============================================================================
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: super-relativity-custom-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/custom-poc-2025
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+    volumes:
+      - neo4j-data:/data
+      - ./poc-data/neo4j-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p custom-poc-2025 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # POSTGRESQL - User management and metadata
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: custom-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=super_relativity
+      - POSTGRES_USER=sr_user
+      - POSTGRES_PASSWORD=sr_password_2025
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./poc-data/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sr_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # REDIS - Caching and job queue
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: custom-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass custom_redis_2025
+    volumes:
+      - redis-data:/data
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # CUSTOM GRAPHQL API - Main application backend
+  # ============================================================================
+  graphql-api:
+    build:
+      context: ./poc-services/custom-api
+      dockerfile: Dockerfile
+    container_name: custom-graphql-api
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=custom-poc-2025
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=super_relativity
+      - POSTGRES_USER=sr_user
+      - POSTGRES_PASSWORD=sr_password_2025
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=custom_redis_2025
+    volumes:
+      - ./poc-services/custom-api:/app
+      - /app/node_modules
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # CUSTOM WEB UI - React frontend
+  # ============================================================================
+  web-ui:
+    build:
+      context: ./poc-services/custom-ui
+      dockerfile: Dockerfile
+    container_name: custom-web-ui
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_GRAPHQL_URL=http://localhost:4000/graphql
+      - REACT_APP_NEO4J_BROWSER_URL=http://localhost:7474
+    volumes:
+      - ./poc-services/custom-ui:/app
+      - /app/node_modules
+    depends_on:
+      - graphql-api
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # DATA INGESTION SERVICE - Multi-source parsers
+  # ============================================================================
+  ingestion-service:
+    build:
+      context: ./poc-services/ingestion
+      dockerfile: Dockerfile
+    container_name: custom-ingestion
+    ports:
+      - "3001:3001"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=custom-poc-2025
+    volumes:
+      - ./poc-services/ingestion:/app
+      - ./poc-data/sample-code:/sample-code:ro
+      - ./poc-data/sample-diagrams:/sample-diagrams:ro
+      - /app/node_modules
+    depends_on:
+      - neo4j
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # ML SERVICE - Impact prediction and relationship inference
+  # ============================================================================
+  ml-service:
+    build:
+      context: ./poc-services/ml-engine
+      dockerfile: Dockerfile
+    container_name: custom-ml-service
+    ports:
+      - "5000:5000"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=custom-poc-2025
+    volumes:
+      - ./poc-services/ml-engine:/app
+      - ml-models:/app/models
+    depends_on:
+      - neo4j
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # PROMETHEUS - Metrics
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: custom-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./poc-config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - custom-poc
+
+  # ============================================================================
+  # GRAFANA - Monitoring dashboards
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: custom-grafana
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - custom-poc
+
+networks:
+  custom-poc:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+  postgres-data:
+  redis-data:
+  ml-models:
+  prometheus-data:
+  grafana-data:

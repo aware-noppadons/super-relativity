@@ -1,0 +1,100 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+  external_labels:
+    cluster: 'super-relativity-mesh'
+    environment: 'poc'
+
+# Scrape configurations for Istio Service Mesh
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Istio control plane (istiod)
+  - job_name: 'istiod'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - istio-system
+    static_configs:
+      - targets: ['istiod:15014']
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: keep
+        regex: 'istiod-.*'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'pilot_.*|envoy_.*|istio_.*'
+        action: keep
+
+  # Envoy sidecar proxies (service mesh data plane)
+  - job_name: 'envoy-stats'
+    metrics_path: /stats/prometheus
+    static_configs:
+      - targets:
+        - 'customer-svc:15090'
+        - 'order-svc:15090'
+        - 'payment-svc:15090'
+        - 'notification-svc:15090'
+        - 'inventory-svc:15090'
+        - 'fraud-svc:15090'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'envoy_.*'
+        action: keep
+
+  # Microservices application metrics
+  - job_name: 'customer-service'
+    static_configs:
+      - targets: ['customer-svc:8001']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'http_.*|grpc_.*|app_.*'
+        action: keep
+
+  - job_name: 'order-service'
+    static_configs:
+      - targets: ['order-svc:8002']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'http_.*|grpc_.*|app_.*'
+        action: keep
+
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment-svc:8003']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'http_.*|grpc_.*|app_.*'
+        action: keep
+
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-svc:8004']
+
+  - job_name: 'inventory-service'
+    static_configs:
+      - targets: ['inventory-svc:8005']
+
+  - job_name: 'fraud-detection-service'
+    static_configs:
+      - targets: ['fraud-svc:8006']
+
+  # Jaeger metrics
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']
+
+  # Neo4j metrics
+  - job_name: 'neo4j'
+    static_configs:
+      - targets: ['neo4j:2004']
+    metrics_path: '/metrics'
+
+  # Kiali metrics
+  - job_name: 'kiali'
+    static_configs:
+      - targets: ['kiali:9090']

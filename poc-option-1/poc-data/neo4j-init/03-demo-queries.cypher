@@ -1,0 +1,262 @@
+// Super Relativity - Demo Queries for Stakeholder Presentations
+// These queries demonstrate the power of graph-based impact analysis
+
+// ============================================================================
+// QUERY 1: What if we change the Customer Portal application?
+// ============================================================================
+// Use Case: "If we upgrade the Customer Portal, what's the blast radius?"
+
+MATCH path = (a:Application {id: 'APP-123'})-[*1..3]-(related)
+RETURN path
+LIMIT 100;
+
+// Enhanced version with counts
+MATCH (a:Application {id: 'APP-123'})
+OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
+OPTIONAL MATCH (a)-[:DEPLOYED_ON]->(i:Infrastructure)
+OPTIONAL MATCH (r:Requirement)-[:IMPLEMENTED_BY]->(a)
+OPTIONAL MATCH (a)<-[:DEPENDS_ON]-(dependent:Application)
+RETURN
+  a.name as Application,
+  collect(DISTINCT r.name) as RequirementsImplemented,
+  collect(DISTINCT d.name) as DataObjectsUsed,
+  collect(DISTINCT i.name) as Infrastructure,
+  collect(DISTINCT dependent.name) as DependentApplications;
+
+// ============================================================================
+// QUERY 2: Which applications handle PII data?
+// ============================================================================
+// Use Case: "For GDPR compliance, show me all applications touching PII"
+
+MATCH (a:Application)-[:USES]->(d:DataObject)
+WHERE d.sensitivity = 'PII'
+RETURN DISTINCT
+  a.name as Application,
+  a.owner as Owner,
+  collect(d.name) as PIIDataObjects,
+  a.costPerYear as AnnualCost
+ORDER BY a.costPerYear DESC;
+
+// ============================================================================
+// QUERY 3: Requirement to Infrastructure trace
+// ============================================================================
+// Use Case: "Show me the complete path from requirement to infrastructure"
+
+MATCH path = (r:Requirement {id: 'REQ-001'})-[:IMPLEMENTED_BY]->(a:Application)
+       -[:USES]->(d:DataObject)-[:STORED_ON]->(i:Infrastructure)
+RETURN path;
+
+// Summary version
+MATCH (r:Requirement {id: 'REQ-001'})-[:IMPLEMENTED_BY]->(a:Application)
+OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
+OPTIONAL MATCH (d)-[:STORED_ON]->(i:Infrastructure)
+RETURN
+  r.name as Requirement,
+  collect(DISTINCT a.name) as ImplementedBy,
+  collect(DISTINCT d.name) as DataUsed,
+  collect(DISTINCT i.name) as StoredOn;
+
+// ============================================================================
+// QUERY 4: Business Capability to Technical Implementation
+// ============================================================================
+// Use Case: "Show me the complete capability breakdown"
+
+MATCH (cap:BusinessCapability {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
+       -[:IMPLEMENTED_BY]->(a:Application)
+RETURN
+  cap.name as Capability,
+  cap.criticality as Criticality,
+  collect(DISTINCT r.name) as Requirements,
+  collect(DISTINCT a.name) as Applications
+ORDER BY cap.criticality DESC;
+
+// Detailed version with data and infrastructure
+MATCH (cap:BusinessCapability {id: 'CAP-002'})
+OPTIONAL MATCH (cap)-[:REQUIRES]->(r:Requirement)
+OPTIONAL MATCH (r)-[:IMPLEMENTED_BY]->(a:Application)
+OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
+OPTIONAL MATCH (a)-[:DEPLOYED_ON]->(i:Infrastructure)
+RETURN
+  cap.name as Capability,
+  cap.owner as BusinessOwner,
+  cap.criticality as BusinessCriticality,
+  collect(DISTINCT r.name) as Requirements,
+  collect(DISTINCT a.name) as Applications,
+  collect(DISTINCT d.name) as DataObjects,
+  collect(DISTINCT i.name) as Infrastructure;
+
+// ============================================================================
+// QUERY 5: Compliance Impact Analysis
+// ============================================================================
+// Use Case: "Which applications must be updated for GDPR compliance?"
+
+MATCH (r:Requirement)-[:IMPLEMENTED_BY]->(a:Application)
+WHERE 'GDPR' IN r.compliance
+RETURN
+  a.name as Application,
+  a.owner as Owner,
+  collect(r.name) as GDPRRequirements,
+  a.lifecycle as Lifecycle,
+  a.costPerYear as AnnualCost
+ORDER BY a.costPerYear DESC;
+
+// ============================================================================
+// QUERY 6: Cost Analysis by Capability
+// ============================================================================
+// Use Case: "What's the total cost of our Application Processing capability?"
+
+MATCH (cap:BusinessCapability {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
+       -[:IMPLEMENTED_BY]->(a:Application)
+RETURN
+  cap.name as Capability,
+  sum(a.costPerYear) as TotalApplicationCost,
+  count(DISTINCT a) as ApplicationCount,
+  collect(DISTINCT a.name) as Applications;
+
+// With infrastructure costs
+MATCH (cap:BusinessCapability {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
+       -[:IMPLEMENTED_BY]->(a:Application)-[:DEPLOYED_ON]->(i:Infrastructure)
+RETURN
+  cap.name as Capability,
+  sum(a.costPerYear) as TotalApplicationCost,
+  sum(i.costPerYear) as TotalInfrastructureCost,
+  sum(a.costPerYear) + sum(i.costPerYear) as TotalCost,
+  count(DISTINCT a) as ApplicationCount,
+  count(DISTINCT i) as InfrastructureCount;
+
+// ============================================================================
+// QUERY 7: Find all orphaned applications
+// ============================================================================
+// Use Case: "Which applications aren't linked to any requirements?"
+
+MATCH (a:Application)
+WHERE NOT (a)<-[:IMPLEMENTED_BY]-(:Requirement)
+RETURN
+  a.name as OrphanedApplication,
+  a.owner as Owner,
+  a.costPerYear as AnnualCost,
+  a.lifecycle as Lifecycle
+ORDER BY a.costPerYear DESC;
+
+// ============================================================================
+// QUERY 8: Critical Data Object Impact
+// ============================================================================
+// Use Case: "If we modify the CustomerTable, what's impacted?"
+
+MATCH (d:DataObject {id: 'DATA-789'})
+OPTIONAL MATCH (a:Application)-[:USES]->(d)
+OPTIONAL MATCH (r:Requirement)-[:IMPLEMENTED_BY]->(a)
+OPTIONAL MATCH (cap:BusinessCapability)-[:REQUIRES]->(r)
+RETURN
+  d.name as DataObject,
+  d.sensitivity as Sensitivity,
+  d.recordCount as RecordCount,
+  collect(DISTINCT a.name) as Applications,
+  collect(DISTINCT r.name) as Requirements,
+  collect(DISTINCT cap.name) as Capabilities;
+
+// ============================================================================
+// QUERY 9: Technology Stack Analysis
+// ============================================================================
+// Use Case: "Show me all applications using Java"
+
+MATCH (a:Application)
+WHERE any(tech IN a.techStack WHERE tech CONTAINS 'Java')
+RETURN
+  a.name as Application,
+  a.techStack as TechnologyStack,
+  a.owner as Owner,
+  a.lifecycle as Lifecycle,
+  a.costPerYear as AnnualCost
+ORDER BY a.costPerYear DESC;
+
+// ============================================================================
+// QUERY 10: End-to-End Traceability
+// ============================================================================
+// Use Case: "Complete traceability from business capability to infrastructure"
+
+MATCH path = (cap:BusinessCapability)-[:REQUIRES]->(r:Requirement)
+       -[:IMPLEMENTED_BY]->(a:Application)-[:USES]->(d:DataObject)
+       -[:STORED_ON]->(i:Infrastructure)
+WHERE cap.criticality = 'Critical'
+RETURN path
+LIMIT 50;
+
+// Summary version for presentation
+MATCH (cap:BusinessCapability)
+WHERE cap.criticality = 'Critical'
+OPTIONAL MATCH (cap)-[:REQUIRES]->(r:Requirement)
+OPTIONAL MATCH (r)-[:IMPLEMENTED_BY]->(a:Application)
+OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
+OPTIONAL MATCH (a)-[:DEPLOYED_ON]->(i:Infrastructure)
+RETURN
+  cap.name as CriticalCapability,
+  cap.owner as BusinessOwner,
+  count(DISTINCT r) as RequirementCount,
+  count(DISTINCT a) as ApplicationCount,
+  count(DISTINCT d) as DataObjectCount,
+  count(DISTINCT i) as InfrastructureCount,
+  sum(DISTINCT a.costPerYear) as TotalApplicationCost
+ORDER BY TotalApplicationCost DESC;
+
+// ============================================================================
+// QUERY 11: Diagram-Based Navigation
+// ============================================================================
+// Use Case: "Show me all components in the Customer Onboarding diagram"
+
+MATCH (diag:Diagram {id: 'DIAGRAM-001'})
+UNWIND diag.components as componentId
+MATCH (entity)
+WHERE entity.id = componentId
+RETURN
+  diag.name as Diagram,
+  entity.id as ComponentID,
+  entity.name as ComponentName,
+  labels(entity)[0] as ComponentType,
+  entity.owner as Owner;
+
+// ============================================================================
+// QUERY 12: Impact Analysis Dashboard
+// ============================================================================
+// Use Case: "Executive dashboard showing system health"
+
+// Count by entity type
+MATCH (cap:BusinessCapability) WITH count(cap) as capCount
+MATCH (req:Requirement) WITH capCount, count(req) as reqCount
+MATCH (app:Application) WITH capCount, reqCount, count(app) as appCount
+MATCH (data:DataObject) WITH capCount, reqCount, appCount, count(data) as dataCount
+MATCH (infra:Infrastructure) WITH capCount, reqCount, appCount, dataCount, count(infra) as infraCount
+RETURN
+  capCount as BusinessCapabilities,
+  reqCount as Requirements,
+  appCount as Applications,
+  dataCount as DataObjects,
+  infraCount as Infrastructure;
+
+// Critical entity counts
+MATCH (cap:BusinessCapability)
+WHERE cap.criticality = 'Critical'
+WITH count(cap) as criticalCaps
+MATCH (a:Application)
+WHERE a.businessValue = 'High' OR a.businessValue = 'Very High'
+WITH criticalCaps, count(a) as highValueApps
+MATCH (d:DataObject)
+WHERE d.sensitivity IN ['PII', 'PCI', 'Confidential']
+WITH criticalCaps, highValueApps, count(d) as sensitiveData
+MATCH (i:Infrastructure)
+WHERE i.criticality = 'Critical'
+RETURN
+  criticalCaps as CriticalCapabilities,
+  highValueApps as HighValueApplications,
+  sensitiveData as SensitiveDataObjects,
+  count(i) as CriticalInfrastructure;
+
+// Total costs
+MATCH (a:Application)
+WITH sum(a.costPerYear) as appCost
+MATCH (i:Infrastructure)
+WITH appCost, sum(i.costPerYear) as infraCost
+RETURN
+  appCost as TotalApplicationCost,
+  infraCost as TotalInfrastructureCost,
+  appCost + infraCost as TotalAnnualCost;

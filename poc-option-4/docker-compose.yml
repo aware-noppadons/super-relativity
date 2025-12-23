@@ -1,0 +1,336 @@
+version: '3.8'
+
+# Super Relativity POC - Option 4 (Developer Portal Model)
+# Backstage + Service Mesh + Neo4j Knowledge Graph
+# Note: This simulates Istio concepts in Docker; production uses Kubernetes
+
+services:
+  # ============================================================================
+  # BACKSTAGE - Developer Portal (Spotify open source)
+  # ============================================================================
+  backstage:
+    build:
+      context: ./poc-services/backstage-portal
+      dockerfile: Dockerfile
+    container_name: backstage-portal
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=backstage
+      - POSTGRES_PASSWORD=backstage123
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=backstage-poc-2025
+      - CATALOG_REFRESH_INTERVAL=300
+    volumes:
+      - ./poc-services/backstage-portal:/app
+      - ./poc-data/backstage-catalog:/app/catalog
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    networks:
+      - backstage-poc
+
+  # ============================================================================
+  # POSTGRESQL - Backstage backend database
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: backstage-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=backstage
+      - POSTGRES_USER=backstage
+      - POSTGRES_PASSWORD=backstage123
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./poc-data/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backstage"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backstage-poc
+
+  # ============================================================================
+  # NEO4J - Knowledge graph for business context
+  # ============================================================================
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: backstage-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/backstage-poc-2025
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+    volumes:
+      - neo4j-data:/data
+      - ./poc-data/neo4j-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p backstage-poc-2025 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backstage-poc
+
+  # ============================================================================
+  # ISTIO CONTROL PLANE (Simulated for Docker POC)
+  # In production: runs on Kubernetes as istiod
+  # ============================================================================
+  istio-simulator:
+    build:
+      context: ./poc-services/istio-simulator
+      dockerfile: Dockerfile
+    container_name: istio-control-plane
+    ports:
+      - "15010:15010"  # Control plane API
+      - "15014:15014"  # Telemetry
+    environment:
+      - MESH_ID=backstage-mesh
+      - CLUSTER_ID=poc-cluster
+    volumes:
+      - ./poc-services/istio-simulator:/app
+      - /app/node_modules
+    networks:
+      - backstage-poc
+      - service-mesh
+
+  # ============================================================================
+  # KIALI - Service Mesh Observability Dashboard
+  # ============================================================================
+  kiali:
+    image: quay.io/kiali/kiali:v1.80
+    container_name: kiali-dashboard
+    ports:
+      - "20001:20001"
+    environment:
+      - SERVER_PORT=20001
+      - PROMETHEUS_URL=http://prometheus:9090
+      - JAEGER_URL=http://jaeger:16686
+      - GRAFANA_URL=http://grafana:3000
+    volumes:
+      - ./poc-config/kiali-config.yaml:/kiali-configuration/config.yaml
+    depends_on:
+      - prometheus
+      - jaeger
+    networks:
+      - backstage-poc
+
+  # ============================================================================
+  # JAEGER - Distributed Tracing
+  # ============================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: jaeger-tracing
+    ports:
+      - "5775:5775/udp"    # Zipkin compact
+      - "6831:6831/udp"    # Jaeger compact
+      - "6832:6832/udp"    # Jaeger binary
+      - "5778:5778"        # Config
+      - "16686:16686"      # UI
+      - "14268:14268"      # Collector HTTP
+      - "14250:14250"      # Collector gRPC
+      - "9411:9411"        # Zipkin
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - backstage-poc
+
+  # ============================================================================
+  # PROMETHEUS - Metrics Collection
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: backstage-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./poc-config/prometheus-istio.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - backstage-poc
+
+  # ============================================================================
+  # GRAFANA - Visualization Dashboards
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: backstage-grafana
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./poc-config/grafana-dashboards:/etc/grafana/provisioning/dashboards
+      - ./poc-config/grafana-datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - backstage-poc
+
+  # ============================================================================
+  # SAMPLE MICROSERVICES - Demonstrate service mesh
+  # ============================================================================
+
+  # Customer Service
+  customer-service:
+    build:
+      context: ./poc-services/sample-microservices/customer
+      dockerfile: Dockerfile
+    container_name: customer-service
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_NAME=customer-service
+      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - ISTIO_SIDECAR=true
+    networks:
+      - service-mesh
+    depends_on:
+      - jaeger
+      - istio-simulator
+
+  # Order Service
+  order-service:
+    build:
+      context: ./poc-services/sample-microservices/order
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_NAME=order-service
+      - CUSTOMER_SERVICE_URL=http://customer-service:8001
+      - PAYMENT_SERVICE_URL=http://payment-service:8003
+      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - ISTIO_SIDECAR=true
+    networks:
+      - service-mesh
+    depends_on:
+      - customer-service
+      - jaeger
+      - istio-simulator
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./poc-services/sample-microservices/payment
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8003:8003"
+    environment:
+      - SERVICE_NAME=payment-service
+      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - ISTIO_SIDECAR=true
+    networks:
+      - service-mesh
+    depends_on:
+      - jaeger
+      - istio-simulator
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./poc-services/sample-microservices/notification
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8004:8004"
+    environment:
+      - SERVICE_NAME=notification-service
+      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - ISTIO_SIDECAR=true
+    networks:
+      - service-mesh
+    depends_on:
+      - jaeger
+      - istio-simulator
+
+  # ============================================================================
+  # INTEGRATION API - Connects Backstage, Neo4j, and Istio data
+  # ============================================================================
+  integration-api:
+    build:
+      context: ./poc-services/integration-api
+      dockerfile: Dockerfile
+    container_name: integration-graphql-api
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=backstage-poc-2025
+      - BACKSTAGE_URL=http://backstage:3000
+      - PROMETHEUS_URL=http://prometheus:9090
+      - KIALI_URL=http://kiali:20001
+      - JAEGER_URL=http://jaeger:16686
+    volumes:
+      - ./poc-services/integration-api:/app
+      - /app/node_modules
+    depends_on:
+      - neo4j
+      - backstage
+      - prometheus
+    networks:
+      - backstage-poc
+      - service-mesh
+
+  # ============================================================================
+  # CATALOG SYNC - Syncs Backstage catalog with Neo4j
+  # ============================================================================
+  catalog-sync:
+    build:
+      context: ./poc-services/catalog-sync
+      dockerfile: Dockerfile
+    container_name: catalog-sync-service
+    environment:
+      - BACKSTAGE_URL=http://backstage:3000
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=backstage-poc-2025
+      - SYNC_INTERVAL=300000  # 5 minutes
+    volumes:
+      - ./poc-services/catalog-sync:/app
+      - /app/node_modules
+    depends_on:
+      - backstage
+      - neo4j
+    networks:
+      - backstage-poc
+
+networks:
+  backstage-poc:
+    driver: bridge
+  service-mesh:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:

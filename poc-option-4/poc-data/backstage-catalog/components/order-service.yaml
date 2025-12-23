@@ -1,0 +1,35 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: order-service
+  description: Handles order creation, processing, and fulfillment
+  annotations:
+    github.com/project-slug: your-org/order-service
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - microservice
+    - java
+    - orders
+  links:
+    - url: http://localhost:8002/health
+      title: Health Check
+      icon: dashboard
+    - url: http://localhost:16686/search?service=order-service
+      title: Distributed Traces (Jaeger)
+      icon: trace
+spec:
+  type: service
+  lifecycle: production
+  owner: team-order-management
+  system: ecommerce-system
+  domain: sales-domain
+  providesApis:
+    - order-api
+  consumesApis:
+    - customer-api
+    - payment-api
+    - inventory-api
+  dependsOn:
+    - component:customer-service
+    - component:payment-service
+    - resource:order-database

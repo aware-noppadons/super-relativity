@@ -1,0 +1,30 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-service
+  description: Manages customer data and profiles
+  annotations:
+    github.com/project-slug: your-org/customer-service
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - microservice
+    - java
+    - customer
+  links:
+    - url: http://localhost:8001/health
+      title: Health Check
+      icon: dashboard
+    - url: http://localhost:20001/kiali/console/graph/namespaces/default
+      title: Service Graph (Kiali)
+      icon: graph
+spec:
+  type: service
+  lifecycle: production
+  owner: team-customer-experience
+  system: ecommerce-system
+  domain: sales-domain
+  providesApis:
+    - customer-api
+  consumesApis: []
+  dependsOn:
+    - resource:customer-database

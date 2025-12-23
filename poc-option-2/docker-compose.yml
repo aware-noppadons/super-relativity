@@ -1,0 +1,101 @@
+version: '3.8'
+
+# Super Relativity POC - Option 2 (Ardoq Simulation)
+# This simulates the Ardoq platform architecture for comparison
+# Note: This is a simulation since Ardoq is a commercial SaaS platform
+
+services:
+  # ============================================================================
+  # MOCK ARDOQ PLATFORM - Simulates Ardoq's unified platform
+  # ============================================================================
+  ardoq-platform:
+    build:
+      context: ./poc-services/mock-ardoq
+      dockerfile: Dockerfile
+    container_name: ardoq-platform
+    ports:
+      - "3000:3000"  # Web UI
+      - "4000:4000"  # REST API
+    environment:
+      - NODE_ENV=development
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=ardoq-poc-2025
+    volumes:
+      - ./poc-data/ardoq-sample-data:/app/data
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - ardoq-poc
+
+  # ============================================================================
+  # NEO4J - Ardoq's graph database backend
+  # ============================================================================
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: ardoq-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/ardoq-poc-2025
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+    volumes:
+      - neo4j-data:/data
+      - ./poc-data/neo4j-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p ardoq-poc-2025 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ardoq-poc
+
+  # ============================================================================
+  # ARDOQ DISCOVERY - Simulated code analysis service
+  # ============================================================================
+  ardoq-discovery:
+    build:
+      context: ./poc-services/ardoq-discovery
+      dockerfile: Dockerfile
+    container_name: ardoq-discovery
+    ports:
+      - "3001:3001"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=ardoq-poc-2025
+    volumes:
+      - ./poc-data/sample-code:/sample-code:ro
+    depends_on:
+      - neo4j
+    networks:
+      - ardoq-poc
+
+  # ============================================================================
+  # GRAFANA - Monitoring (same as production Ardoq)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ardoq-grafana
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - ardoq-poc
+
+networks:
+  ardoq-poc:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+  grafana-data:

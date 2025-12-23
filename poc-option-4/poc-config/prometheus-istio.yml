@@ -1,0 +1,73 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'backstage-poc'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Istio control plane metrics
+  - job_name: 'istio-simulator'
+    static_configs:
+      - targets: ['istio-simulator:15014']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'istio_.*'
+        action: keep
+
+  # Sample microservices
+  - job_name: 'customer-service'
+    static_configs:
+      - targets: ['customer-service:8001']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'customer-service'
+
+  - job_name: 'order-service'
+    static_configs:
+      - targets: ['order-service:8002']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'order-service'
+
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment-service:8003']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'payment-service'
+
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8004']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'notification-service'
+
+  # Neo4j metrics (if enabled)
+  - job_name: 'neo4j'
+    static_configs:
+      - targets: ['neo4j:2004']
+    metrics_path: '/metrics'
+
+  # Backstage backend metrics
+  - job_name: 'backstage'
+    static_configs:
+      - targets: ['backstage:3000']
+    metrics_path: '/metrics'

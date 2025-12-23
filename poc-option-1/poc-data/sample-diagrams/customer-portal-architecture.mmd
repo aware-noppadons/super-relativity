@@ -1,0 +1,65 @@
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        WebUI[Customer Portal Web UI<br/>React + TypeScript]
+        MobileApp[Mobile App<br/>React Native]
+    end
+
+    subgraph "API Gateway Layer"
+        Gateway[API Gateway<br/>Kong]
+    end
+
+    subgraph "Application Services"
+        AppAPI[Application Processing API<br/>Java Spring Boot]
+        DocService[Document Management<br/>Python FastAPI]
+        NotifyService[Notification Service<br/>Node.js]
+        FraudService[Fraud Detection<br/>Python ML]
+    end
+
+    subgraph "Data Layer"
+        CustomerDB[(Customer Database<br/>PostgreSQL)]
+        AppDB[(Application Database<br/>PostgreSQL)]
+        DocStorage[(Document Storage<br/>AWS S3)]
+        Cache[(Redis Cache)]
+    end
+
+    subgraph "Infrastructure"
+        LoadBalancer[Load Balancer<br/>ALB]
+        FirewallRule[Firewall Rule FW-001<br/>Allow HTTPS:443]
+    end
+
+    %% Frontend connections
+    WebUI -->|HTTPS| LoadBalancer
+    MobileApp -->|HTTPS| LoadBalancer
+
+    %% Load Balancer to Gateway
+    LoadBalancer -->|HTTP| Gateway
+    FirewallRule -.protects.-> LoadBalancer
+
+    %% Gateway to Services
+    Gateway -->|REST| AppAPI
+    Gateway -->|REST| DocService
+    Gateway -->|REST| NotifyService
+
+    %% Service dependencies
+    AppAPI -->|calls| FraudService
+    AppAPI -->|calls| NotifyService
+
+    %% Data access
+    AppAPI -->|SQL| CustomerDB
+    AppAPI -->|SQL| AppDB
+    AppAPI -->|Redis| Cache
+    DocService -->|S3 API| DocStorage
+    FraudService -->|SQL| AppDB
+
+    %% Styling
+    classDef frontend fill:#e1f5ff
+    classDef service fill:#fff4e1
+    classDef data fill:#f0f0f0
+    classDef infra fill:#e8f5e9
+
+    class WebUI,MobileApp frontend
+    class AppAPI,DocService,NotifyService,FraudService service
+    class CustomerDB,AppDB,DocStorage,Cache data
+    class LoadBalancer,FirewallRule,Gateway infra
+```

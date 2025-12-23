@@ -1,0 +1,7 @@
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: sales-domain
+  description: All systems related to sales and revenue generation
+spec:
+  owner: vp-sales

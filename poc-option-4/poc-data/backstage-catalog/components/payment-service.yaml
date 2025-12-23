@@ -1,0 +1,29 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: payment-service
+  description: Processes payments and manages payment methods
+  annotations:
+    github.com/project-slug: your-org/payment-service
+    pagerduty.com/integration-key: payment-service-key
+  tags:
+    - microservice
+    - java
+    - payment
+    - pci-compliant
+  links:
+    - url: http://localhost:8003/health
+      title: Health Check
+      icon: dashboard
+spec:
+  type: service
+  lifecycle: production
+  owner: team-payments
+  system: ecommerce-system
+  domain: sales-domain
+  providesApis:
+    - payment-api
+  consumesApis:
+    - external-payment-gateway-api
+  dependsOn:
+    - resource:payment-database

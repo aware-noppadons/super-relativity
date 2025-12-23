@@ -1,0 +1,45 @@
+auth:
+  strategy: anonymous
+
+deployment:
+  accessible_namespaces:
+    - '**'
+
+server:
+  web_root: /kiali
+  port: 20001
+
+external_services:
+  prometheus:
+    url: http://prometheus:9090
+  grafana:
+    url: http://grafana:3000
+    in_cluster_url: http://grafana:3000
+  tracing:
+    enabled: true
+    in_cluster_url: http://jaeger:16686
+    url: http://jaeger:16686
+    use_grpc: false
+
+istio_namespace: istio-system
+
+# Kiali features
+kiali_feature_flags:
+  ui_defaults:
+    graph:
+      find_options:
+        - description: "Find: slow edges (> 1s)"
+          expression: "rt > 1000"
+        - description: "Find: unhealthy nodes"
+          expression: "! healthy"
+        - description: "Find: unknown nodes"
+          expression: "name = unknown"
+      hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
+        - description: "Hide: fast edges (< 100ms)"
+          expression: "rt < 100"
+      traffic_rates:
+        - grpc
+        - http
+        - tcp

@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: notification-service
+  description: Sends notifications via email, SMS, and push
+  annotations:
+    github.com/project-slug: your-org/notification-service
+  tags:
+    - microservice
+    - nodejs
+    - notifications
+  links:
+    - url: http://localhost:8004/health
+      title: Health Check
+      icon: dashboard
+spec:
+  type: service
+  lifecycle: production
+  owner: team-platform
+  system: ecommerce-system
+  domain: platform-domain
+  providesApis:
+    - notification-api
+  consumesApis:
+    - sendgrid-api
+    - twilio-api

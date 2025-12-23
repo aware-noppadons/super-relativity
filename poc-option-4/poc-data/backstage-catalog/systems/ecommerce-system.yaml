@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: ecommerce-system
+  description: Complete e-commerce platform for online sales
+  tags:
+    - ecommerce
+    - customer-facing
+spec:
+  owner: team-ecommerce
+  domain: sales-domain

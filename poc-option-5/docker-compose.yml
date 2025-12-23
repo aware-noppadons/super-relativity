@@ -1,0 +1,400 @@
+version: '3.8'
+
+# Super Relativity POC - Option 5 (Service Mesh-First Model)
+# Istio + Observability Stack + Lightweight Business Context
+# Note: Simulates Istio in Docker; production requires Kubernetes
+
+services:
+  # ============================================================================
+  # ISTIO CONTROL PLANE (Simulated)
+  # In production: istiod runs on Kubernetes
+  # ============================================================================
+  istiod:
+    build:
+      context: ./poc-services/istio-control-plane
+      dockerfile: Dockerfile
+    container_name: istiod-controlplane
+    ports:
+      - "15010:15010"  # XDS API
+      - "15014:15014"  # Telemetry
+      - "15017:15017"  # Webhook
+    environment:
+      - MESH_ID=super-relativity-mesh
+      - CLUSTER_ID=primary-cluster
+      - PILOT_ENABLE_ANALYSIS=true
+    networks:
+      - istio-mesh
+      - observability
+
+  # ============================================================================
+  # KIALI - Primary UI for Service Mesh Visualization
+  # ============================================================================
+  kiali:
+    image: quay.io/kiali/kiali:v1.80
+    container_name: kiali-ui
+    ports:
+      - "20001:20001"
+    environment:
+      - SERVER_PORT=20001
+      - SERVER_WEB_ROOT=/kiali
+      - PROMETHEUS_URL=http://prometheus:9090
+      - JAEGER_URL=http://jaeger:16686
+      - GRAFANA_URL=http://grafana:3000
+      - AUTH_STRATEGY=anonymous
+    volumes:
+      - ./poc-config/kiali-config.yaml:/kiali-configuration/config.yaml
+    command:
+      - "-config"
+      - "/kiali-configuration/config.yaml"
+    depends_on:
+      - prometheus
+      - jaeger
+    networks:
+      - observability
+
+  # ============================================================================
+  # JAEGER - Distributed Tracing
+  # ============================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: jaeger-all-in-one
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"      # UI
+      - "14268:14268"      # Collector HTTP
+      - "14250:14250"      # Collector gRPC
+      - "9411:9411"        # Zipkin compatible
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+    volumes:
+      - jaeger-data:/badger
+    networks:
+      - observability
+
+  # ============================================================================
+  # PROMETHEUS - Metrics Collection (Istio telemetry)
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-server
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./poc-config/prometheus-config.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+      - '--web.enable-lifecycle'
+    networks:
+      - observability
+
+  # ============================================================================
+  # GRAFANA - Metrics Visualization
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-dashboards
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-polystat-panel
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./poc-config/grafana-datasources:/etc/grafana/provisioning/datasources
+      - ./poc-config/grafana-dashboards-istio:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+      - jaeger
+    networks:
+      - observability
+
+  # ============================================================================
+  # GITLAB - Source Control + CI/CD + Issue Tracking
+  # ============================================================================
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab-ce
+    hostname: gitlab.local
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "8022:22"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.local:8080'
+        gitlab_rails['gitlab_shell_ssh_port'] = 8022
+        gitlab_rails['initial_root_password'] = 'rootpassword'
+        prometheus['enable'] = false
+        grafana['enable'] = false
+    volumes:
+      - gitlab-config:/etc/gitlab
+      - gitlab-logs:/var/log/gitlab
+      - gitlab-data:/var/opt/gitlab
+    shm_size: '256m'
+    networks:
+      - devops
+
+  # ============================================================================
+  # NEO4J - Business Context Graph (Lightweight)
+  # ============================================================================
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: neo4j-context
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/mesh-poc-2025
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j-data:/data
+      - ./poc-data/neo4j-schema:/docker-entrypoint-initdb.d
+    networks:
+      - business-context
+
+  # ============================================================================
+  # SAMPLE MICROSERVICES WITH ISTIO SIDECARS
+  # ============================================================================
+
+  # Customer Service
+  customer-svc:
+    build:
+      context: ./poc-services/microservices/customer
+      dockerfile: Dockerfile
+    container_name: customer-service
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_NAME=customer-service
+      - SERVICE_VERSION=v1
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - ENABLE_ISTIO_TELEMETRY=true
+    networks:
+      - istio-mesh
+    labels:
+      - "service.istio.io/canonical-name=customer-service"
+      - "service.istio.io/canonical-revision=v1"
+
+  # Order Service
+  order-svc:
+    build:
+      context: ./poc-services/microservices/order
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_NAME=order-service
+      - SERVICE_VERSION=v1
+      - CUSTOMER_SERVICE_URL=http://customer-svc:8001
+      - PAYMENT_SERVICE_URL=http://payment-svc:8003
+      - INVENTORY_SERVICE_URL=http://inventory-svc:8005
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - ENABLE_ISTIO_TELEMETRY=true
+    networks:
+      - istio-mesh
+    depends_on:
+      - customer-svc
+    labels:
+      - "service.istio.io/canonical-name=order-service"
+      - "service.istio.io/canonical-revision=v1"
+
+  # Payment Service
+  payment-svc:
+    build:
+      context: ./poc-services/microservices/payment
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8003:8003"
+    environment:
+      - SERVICE_NAME=payment-service
+      - SERVICE_VERSION=v1
+      - FRAUD_CHECK_URL=http://fraud-svc:8006
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - ENABLE_ISTIO_TELEMETRY=true
+    networks:
+      - istio-mesh
+    labels:
+      - "service.istio.io/canonical-name=payment-service"
+      - "service.istio.io/canonical-revision=v1"
+
+  # Notification Service
+  notification-svc:
+    build:
+      context: ./poc-services/microservices/notification
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8004:8004"
+    environment:
+      - SERVICE_NAME=notification-service
+      - SERVICE_VERSION=v1
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - ENABLE_ISTIO_TELEMETRY=true
+    networks:
+      - istio-mesh
+    labels:
+      - "service.istio.io/canonical-name=notification-service"
+      - "service.istio.io/canonical-revision=v1"
+
+  # Inventory Service
+  inventory-svc:
+    build:
+      context: ./poc-services/microservices/inventory
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    ports:
+      - "8005:8005"
+    environment:
+      - SERVICE_NAME=inventory-service
+      - SERVICE_VERSION=v1
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - ENABLE_ISTIO_TELEMETRY=true
+    networks:
+      - istio-mesh
+    labels:
+      - "service.istio.io/canonical-name=inventory-service"
+      - "service.istio.io/canonical-revision=v1"
+
+  # Fraud Detection Service
+  fraud-svc:
+    build:
+      context: ./poc-services/microservices/fraud
+      dockerfile: Dockerfile
+    container_name: fraud-detection-service
+    ports:
+      - "8006:8006"
+    environment:
+      - SERVICE_NAME=fraud-detection-service
+      - SERVICE_VERSION=v1
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - ENABLE_ISTIO_TELEMETRY=true
+    networks:
+      - istio-mesh
+    labels:
+      - "service.istio.io/canonical-name=fraud-detection-service"
+      - "service.istio.io/canonical-revision=v1"
+
+  # ============================================================================
+  # QUERY API - GraphQL interface combining Istio + Neo4j data
+  # ============================================================================
+  query-api:
+    build:
+      context: ./poc-services/query-api
+      dockerfile: Dockerfile
+    container_name: mesh-query-api
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=mesh-poc-2025
+      - PROMETHEUS_URL=http://prometheus:9090
+      - KIALI_URL=http://kiali:20001
+      - JAEGER_URL=http://jaeger:16686
+      - GITLAB_URL=http://gitlab:8080
+      - GITLAB_TOKEN=placeholder-token
+    volumes:
+      - ./poc-services/query-api:/app
+      - /app/node_modules
+    depends_on:
+      - neo4j
+      - prometheus
+      - kiali
+    networks:
+      - observability
+      - business-context
+      - devops
+
+  # ============================================================================
+  # TRAFFIC GENERATOR - Simulates production traffic
+  # ============================================================================
+  traffic-generator:
+    build:
+      context: ./poc-services/traffic-generator
+      dockerfile: Dockerfile
+    container_name: traffic-simulator
+    environment:
+      - ORDER_SERVICE_URL=http://order-svc:8002
+      - CUSTOMER_SERVICE_URL=http://customer-svc:8001
+      - TRAFFIC_PATTERN=realistic
+      - REQUESTS_PER_MINUTE=60
+    depends_on:
+      - order-svc
+      - customer-svc
+    networks:
+      - istio-mesh
+
+  # ============================================================================
+  # CONTEXT ENRICHMENT - Syncs GitLab + Neo4j with Istio data
+  # ============================================================================
+  context-enrichment:
+    build:
+      context: ./poc-services/context-enrichment
+      dockerfile: Dockerfile
+    container_name: context-enrichment-service
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=mesh-poc-2025
+      - PROMETHEUS_URL=http://prometheus:9090
+      - KIALI_URL=http://kiali:20001
+      - GITLAB_URL=http://gitlab:8080
+      - SYNC_INTERVAL=60000  # 1 minute
+    volumes:
+      - ./poc-services/context-enrichment:/app
+      - /app/node_modules
+    depends_on:
+      - neo4j
+      - prometheus
+      - gitlab
+    networks:
+      - observability
+      - business-context
+      - devops
+
+networks:
+  istio-mesh:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  observability:
+    driver: bridge
+  business-context:
+    driver: bridge
+  devops:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+  prometheus-data:
+  grafana-data:
+  jaeger-data:
+  gitlab-config:
+  gitlab-logs:
+  gitlab-data:

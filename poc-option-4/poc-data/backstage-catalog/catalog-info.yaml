@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: super-relativity-catalog
+  description: Super Relativity POC Service Catalog
+spec:
+  type: url
+  targets:
+    - ./components/customer-service.yaml
+    - ./components/order-service.yaml
+    - ./components/payment-service.yaml
+    - ./components/notification-service.yaml
+    - ./systems/ecommerce-system.yaml
+    - ./domains/sales-domain.yaml
