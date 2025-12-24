@@ -67,7 +67,8 @@ function initializeDefaultData() {
       priority: 'High',
       status: 'Approved',
       owner: 'Product Team',
-      description: 'Allow customers to submit applications online without agent assistance'
+      description: 'Allow customers to submit applications online without agent assistance',
+      capability: 'CAP-001'  // Supports Customer Onboarding
     },
     {
       id: 'REQ-002',
@@ -76,7 +77,8 @@ function initializeDefaultData() {
       priority: 'Medium',
       status: 'Approved',
       owner: 'Product Team',
-      description: 'Provide customers with real-time updates on application status'
+      description: 'Provide customers with real-time updates on application status',
+      capability: 'CAP-004'  // Supports Customer Service & Support
     },
     {
       id: 'REQ-003',
@@ -85,12 +87,106 @@ function initializeDefaultData() {
       priority: 'High',
       status: 'Approved',
       owner: 'Security Team',
-      description: 'Ensure PII data is encrypted in transit and at rest'
+      description: 'Ensure PII data is encrypted in transit and at rest',
+      capability: 'CAP-003'  // Supports Document Management
+    }
+  ];
+
+  // Sample Business Capabilities
+  businessCapabilities = [
+    {
+      id: 'CAP-001',
+      name: 'Customer Onboarding',
+      level: 'L2',
+      description: 'Ability to onboard new customers through digital channels',
+      owner: 'Customer Experience',
+      criticality: 'High',
+      maturity: 'Optimized',
+      application: 'APP-123'
+    },
+    {
+      id: 'CAP-002',
+      name: 'Application Processing',
+      level: 'L2',
+      description: 'Process and validate customer applications',
+      owner: 'Operations',
+      criticality: 'High',
+      maturity: 'Defined',
+      application: 'APP-456'
+    },
+    {
+      id: 'CAP-003',
+      name: 'Document Management',
+      level: 'L2',
+      description: 'Store and retrieve customer documents',
+      owner: 'IT Operations',
+      criticality: 'Medium',
+      maturity: 'Managed',
+      application: 'APP-789'
+    },
+    {
+      id: 'CAP-004',
+      name: 'Customer Service & Support',
+      level: 'L2',
+      description: 'Provide customer support and service',
+      owner: 'Customer Service',
+      criticality: 'High',
+      maturity: 'Defined',
+      application: 'APP-123'
+    },
+    {
+      id: 'CAP-005',
+      name: 'Payment Processing',
+      level: 'L2',
+      description: 'Process payments and transactions',
+      owner: 'Finance',
+      criticality: 'Critical',
+      maturity: 'Optimized',
+      application: 'APP-901'
+    },
+    {
+      id: 'CAP-006',
+      name: 'Risk Assessment & Fraud Detection',
+      level: 'L2',
+      description: 'Detect and prevent fraud',
+      owner: 'Risk Management',
+      criticality: 'Critical',
+      maturity: 'Defined',
+      application: 'APP-567'
+    },
+    {
+      id: 'CAP-007',
+      name: 'Compliance & Reporting',
+      level: 'L2',
+      description: 'Ensure regulatory compliance and reporting',
+      owner: 'Compliance',
+      criticality: 'High',
+      maturity: 'Defined',
+      application: 'APP-012'
+    },
+    {
+      id: 'CAP-008',
+      name: 'Analytics & Business Intelligence',
+      level: 'L2',
+      description: 'Provide business insights and analytics',
+      owner: 'Data Analytics',
+      criticality: 'Medium',
+      maturity: 'Emerging',
+      application: 'APP-890'
     }
   ];
 
   // Sample Applications
   applications = [
+    {
+      id: 'APP-012',
+      name: 'Reporting Engine',
+      type: 'Backend Service',
+      businessValue: 'High',
+      lifecycle: 'Active',
+      techStack: ['Python', 'Apache Spark', 'PostgreSQL'],
+      repositories: ['github.com/org/reporting-engine']
+    },
     {
       id: 'APP-123',
       name: 'Customer Portal',
@@ -99,6 +195,24 @@ function initializeDefaultData() {
       lifecycle: 'Active',
       techStack: ['React', 'Node.js', 'PostgreSQL'],
       repositories: ['github.com/org/customer-portal-frontend', 'github.com/org/customer-portal-backend']
+    },
+    {
+      id: 'APP-234',
+      name: 'Notification Service',
+      type: 'Microservice',
+      businessValue: 'Medium',
+      lifecycle: 'Active',
+      techStack: ['Node.js', 'Redis', 'SendGrid'],
+      repositories: ['github.com/org/notification-service']
+    },
+    {
+      id: 'APP-345',
+      name: 'Legacy Mainframe Bridge',
+      type: 'Integration Service',
+      businessValue: 'Low',
+      lifecycle: 'Sunset',
+      techStack: ['COBOL', 'IBM MQ', 'Java'],
+      repositories: ['github.com/org/mainframe-bridge']
     },
     {
       id: 'APP-456',
@@ -110,6 +224,24 @@ function initializeDefaultData() {
       repositories: ['github.com/org/app-processing-api']
     },
     {
+      id: 'APP-567',
+      name: 'Fraud Detection Engine',
+      type: 'Backend Service',
+      businessValue: 'Critical',
+      lifecycle: 'Active',
+      techStack: ['Python', 'TensorFlow', 'Redis'],
+      repositories: ['github.com/org/fraud-detection']
+    },
+    {
+      id: 'APP-678',
+      name: 'Mobile App',
+      type: 'Mobile Application',
+      businessValue: 'High',
+      lifecycle: 'Active',
+      techStack: ['React Native', 'iOS', 'Android'],
+      repositories: ['github.com/org/mobile-app']
+    },
+    {
       id: 'APP-789',
       name: 'Document Management Service',
       type: 'Microservice',
@@ -117,20 +249,29 @@ function initializeDefaultData() {
       lifecycle: 'Active',
       techStack: ['Python', 'FastAPI', 'S3'],
       repositories: ['github.com/org/doc-mgmt-service']
+    },
+    {
+      id: 'APP-890',
+      name: 'Analytics Dashboard',
+      type: 'Web Application',
+      businessValue: 'Medium',
+      lifecycle: 'Active',
+      techStack: ['Vue.js', 'D3.js', 'ClickHouse'],
+      repositories: ['github.com/org/analytics-dashboard']
+    },
+    {
+      id: 'APP-901',
+      name: 'Payment Gateway',
+      type: 'Backend Service',
+      businessValue: 'Critical',
+      lifecycle: 'Active',
+      techStack: ['Java', 'Spring Boot', 'Stripe API'],
+      repositories: ['github.com/org/payment-gateway']
     }
   ];
 
   // Sample Data Objects
   dataObjects = [
-    {
-      id: 'DATA-789',
-      name: 'CustomerTable',
-      type: 'Database Table',
-      database: 'customer_db',
-      schema: 'public',
-      sensitivity: 'PII',
-      columns: ['id', 'name', 'email', 'phone', 'address']
-    },
     {
       id: 'DATA-012',
       name: 'ApplicationTable',
@@ -138,7 +279,27 @@ function initializeDefaultData() {
       database: 'application_db',
       schema: 'public',
       sensitivity: 'Standard',
-      columns: ['id', 'customer_id', 'status', 'submitted_date', 'type']
+      columns: ['id', 'customer_id', 'status', 'submitted_date', 'type'],
+      application: 'APP-456'
+    },
+    {
+      id: 'DATA-123',
+      name: 'AnalyticsDataWarehouse',
+      type: 'Data Warehouse',
+      database: 'analytics_dw',
+      schema: 'public',
+      sensitivity: 'Confidential',
+      columns: ['customer_id', 'application_id', 'transaction_id', 'metrics'],
+      application: 'APP-890'
+    },
+    {
+      id: 'DATA-234',
+      name: 'ConfigurationStore',
+      type: 'Key-Value Store',
+      location: 'Redis',
+      sensitivity: 'Standard',
+      retention: '90 days',
+      application: 'APP-123'
     },
     {
       id: 'DATA-345',
@@ -146,7 +307,65 @@ function initializeDefaultData() {
       type: 'Object Storage',
       location: 'S3',
       sensitivity: 'PII',
-      retention: '7 years'
+      retention: '7 years',
+      application: 'APP-789'
+    },
+    {
+      id: 'DATA-456',
+      name: 'TransactionTable',
+      type: 'Database Table',
+      database: 'payment_db',
+      schema: 'public',
+      sensitivity: 'PCI',
+      columns: ['id', 'customer_id', 'amount', 'status', 'timestamp'],
+      application: 'APP-901'
+    },
+    {
+      id: 'DATA-567',
+      name: 'AuditLog',
+      type: 'Log Store',
+      location: 'Elasticsearch',
+      sensitivity: 'Confidential',
+      retention: '10 years',
+      application: 'APP-012'
+    },
+    {
+      id: 'DATA-678',
+      name: 'UserSessionCache',
+      type: 'Cache',
+      location: 'Redis',
+      sensitivity: 'PII',
+      retention: '24 hours',
+      application: 'APP-123'
+    },
+    {
+      id: 'DATA-789',
+      name: 'CustomerTable',
+      type: 'Database Table',
+      database: 'customer_db',
+      schema: 'public',
+      sensitivity: 'PII',
+      columns: ['id', 'name', 'email', 'phone', 'address'],
+      application: 'APP-123'
+    },
+    {
+      id: 'DATA-890',
+      name: 'FraudScoresTable',
+      type: 'Database Table',
+      database: 'fraud_db',
+      schema: 'public',
+      sensitivity: 'Confidential',
+      columns: ['id', 'customer_id', 'application_id', 'score', 'risk_level'],
+      application: 'APP-567'
+    },
+    {
+      id: 'DATA-901',
+      name: 'NotificationQueue',
+      type: 'Message Queue',
+      location: 'RabbitMQ',
+      sensitivity: 'Standard',
+      retention: '7 days',
+      application: 'APP-234'
     }
   ];
 
@@ -231,17 +450,28 @@ function initializeDefaultData() {
 
   // Sample Relationships
   relationships = [
-    // Requirements to Applications
-    { from: 'REQ-001', to: 'APP-123', type: 'IMPLEMENTED_BY' },
-    { from: 'REQ-001', to: 'APP-456', type: 'IMPLEMENTED_BY' },
-    { from: 'REQ-002', to: 'APP-123', type: 'IMPLEMENTED_BY' },
-    { from: 'REQ-003', to: 'APP-789', type: 'IMPLEMENTED_BY' },
+    // Requirements Support Business Capabilities
+    { from: 'REQ-001', to: 'CAP-001', type: 'SUPPORTS' },  // Enable self-service supports Customer Onboarding
+    { from: 'REQ-002', to: 'CAP-004', type: 'SUPPORTS' },  // Real-time tracking supports Customer Service
+    { from: 'REQ-003', to: 'CAP-003', type: 'SUPPORTS' },  // Secure storage supports Document Management
 
-    // Applications to Data (high-level)
-    { from: 'APP-123', to: 'DATA-789', type: 'USES' },
-    { from: 'APP-456', to: 'DATA-012', type: 'USES' },
-    { from: 'APP-456', to: 'DATA-789', type: 'USES' },
-    { from: 'APP-789', to: 'DATA-345', type: 'USES' },
+    // Requirements to Components (technical implementation)
+    { from: 'REQ-001', to: 'COMP-001', type: 'IMPLEMENTED_BY' },  // Self-service submission by Registration Form
+    { from: 'REQ-001', to: 'COMP-003', type: 'IMPLEMENTED_BY' },  // Authentication for submission
+    { from: 'REQ-002', to: 'COMP-002', type: 'IMPLEMENTED_BY' },  // Status tracking by Status Dashboard
+    { from: 'REQ-002', to: 'COMP-003', type: 'IMPLEMENTED_BY' },  // Authentication for status viewing
+    { from: 'REQ-003', to: 'COMP-007', type: 'IMPLEMENTED_BY' },  // Document upload by Upload Handler
+    { from: 'REQ-003', to: 'COMP-008', type: 'IMPLEMENTED_BY' },  // Document retrieval by Retrieval Service
+
+    // Applications Implement Business Capabilities
+    { from: 'APP-123', to: 'CAP-001', type: 'IMPLEMENTS_CAPABILITY' },  // Customer Portal implements Customer Onboarding
+    { from: 'APP-123', to: 'CAP-004', type: 'IMPLEMENTS_CAPABILITY' },  // Customer Portal implements Customer Service & Support
+    { from: 'APP-456', to: 'CAP-002', type: 'IMPLEMENTS_CAPABILITY' },  // App Processing API implements Application Processing
+    { from: 'APP-567', to: 'CAP-006', type: 'IMPLEMENTS_CAPABILITY' },  // Fraud Detection Engine implements Risk Assessment
+    { from: 'APP-789', to: 'CAP-003', type: 'IMPLEMENTS_CAPABILITY' },  // Doc Management Service implements Document Management
+    { from: 'APP-890', to: 'CAP-008', type: 'IMPLEMENTS_CAPABILITY' },  // Analytics Dashboard implements Analytics & BI
+    { from: 'APP-901', to: 'CAP-005', type: 'IMPLEMENTS_CAPABILITY' },  // Payment Gateway implements Payment Processing
+    { from: 'APP-012', to: 'CAP-007', type: 'IMPLEMENTS_CAPABILITY' },  // Reporting Engine implements Compliance & Reporting
 
     // Applications to Components
     { from: 'APP-123', to: 'COMP-001', type: 'HAS_COMPONENT' },
@@ -253,70 +483,102 @@ function initializeDefaultData() {
     { from: 'APP-789', to: 'COMP-007', type: 'HAS_COMPONENT' },
     { from: 'APP-789', to: 'COMP-008', type: 'HAS_COMPONENT' },
 
+    // Business Capabilities Enabled By Components
+    // Customer Onboarding enabled by registration and authentication
+    { from: 'CAP-001', to: 'COMP-001', type: 'ENABLED_BY' },  // Registration Form
+    { from: 'CAP-001', to: 'COMP-003', type: 'ENABLED_BY' },  // Authentication Service
+
+    // Application Processing enabled by validation, fraud detection, and customer lookup
+    { from: 'CAP-002', to: 'COMP-004', type: 'ENABLED_BY' },  // Application Validator
+    { from: 'CAP-002', to: 'COMP-005', type: 'ENABLED_BY' },  // Fraud Detector
+    { from: 'CAP-002', to: 'COMP-006', type: 'ENABLED_BY' },  // Customer Lookup Service
+
+    // Document Management enabled by upload and retrieval
+    { from: 'CAP-003', to: 'COMP-007', type: 'ENABLED_BY' },  // Document Upload Handler
+    { from: 'CAP-003', to: 'COMP-008', type: 'ENABLED_BY' },  // Document Retrieval Service
+
+    // Customer Service & Support enabled by status dashboard and authentication
+    { from: 'CAP-004', to: 'COMP-002', type: 'ENABLED_BY' },  // Status Dashboard
+    { from: 'CAP-004', to: 'COMP-003', type: 'ENABLED_BY' },  // Authentication Service
+
+    // Risk Assessment & Fraud Detection enabled by fraud detector
+    { from: 'CAP-006', to: 'COMP-005', type: 'ENABLED_BY' },  // Fraud Detector
+
+    // Component to Data Relationships (MODIFIES and READS)
     // Customer Portal (APP-123) Component Data Relationships
-    // EXAMPLE: Registration Form (COMP-001) MODIFIES CustomerTable, Status Dashboard (COMP-002) READS CustomerTable
     { from: 'COMP-001', to: 'DATA-789', type: 'MODIFIES' },  // Registration Form modifies CustomerTable
-    { from: 'COMP-001', to: 'DATA-012', type: 'MODIFIES' }, // Registration Form modifies ApplicationTable
+    { from: 'COMP-001', to: 'DATA-012', type: 'MODIFIES' },  // Registration Form modifies ApplicationTable
+    { from: 'COMP-001', to: 'DATA-678', type: 'MODIFIES' },  // Registration Form modifies UserSessionCache
     { from: 'COMP-002', to: 'DATA-789', type: 'READS' },     // Status Dashboard reads CustomerTable
     { from: 'COMP-002', to: 'DATA-012', type: 'READS' },     // Status Dashboard reads ApplicationTable
     { from: 'COMP-003', to: 'DATA-789', type: 'READS' },     // Authentication reads CustomerTable
+    { from: 'COMP-003', to: 'DATA-678', type: 'READS' },     // Authentication reads UserSessionCache
 
     // Application Processing API (APP-456) Component Data Relationships
-    { from: 'COMP-004', to: 'DATA-012', type: 'MODIFIES' }, // Validator modifies ApplicationTable
+    { from: 'COMP-004', to: 'DATA-012', type: 'MODIFIES' },  // Validator modifies ApplicationTable
     { from: 'COMP-004', to: 'DATA-789', type: 'READS' },     // Validator reads CustomerTable
     { from: 'COMP-005', to: 'DATA-012', type: 'READS' },     // Fraud Detector reads ApplicationTable
-    { from: 'COMP-005', to: 'DATA-789', type: 'READS' },     // Fraud Detector reads CustomerTable (for scoring)
+    { from: 'COMP-005', to: 'DATA-789', type: 'READS' },     // Fraud Detector reads CustomerTable
+    { from: 'COMP-005', to: 'DATA-890', type: 'MODIFIES' },  // Fraud Detector modifies FraudScoresTable
     { from: 'COMP-006', to: 'DATA-789', type: 'READS' },     // Customer Lookup reads CustomerTable
 
     // Document Management (APP-789) Component Data Relationships
-    { from: 'COMP-007', to: 'DATA-345', type: 'MODIFIES' }, // Upload Handler modifies DocumentStorage
+    { from: 'COMP-007', to: 'DATA-345', type: 'MODIFIES' },  // Upload Handler modifies DocumentStorage
+    { from: 'COMP-007', to: 'DATA-567', type: 'MODIFIES' },  // Upload Handler modifies AuditLog
     { from: 'COMP-008', to: 'DATA-345', type: 'READS' },     // Retrieval Service reads DocumentStorage
+    { from: 'COMP-008', to: 'DATA-567', type: 'MODIFIES' },  // Retrieval Service logs to AuditLog
 
-    // Business Capability to Data Object Relationships
-    // Shows which data is critical for each business capability
-
+    // Business Capability CRUD Operations on Data Objects
     // Customer Onboarding (CAP-001)
-    { from: 'CAP-001', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
-    { from: 'CAP-001', to: 'DATA-345', type: 'REQUIRES_DATA' },  // Requires DocumentStorage
-    { from: 'CAP-001', to: 'DATA-678', type: 'REQUIRES_DATA' },  // Requires UserSessionCache
+    { from: 'CAP-001', to: 'DATA-789', type: 'CREATE' },      // Creates new customer records
+    { from: 'CAP-001', to: 'DATA-789', type: 'READ' },        // Reads customer data for validation
+    { from: 'CAP-001', to: 'DATA-678', type: 'CREATE' },      // Creates session cache entries
+    { from: 'CAP-001', to: 'DATA-345', type: 'CREATE' },      // Creates document storage entries
 
     // Application Processing (CAP-002)
-    { from: 'CAP-002', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
-    { from: 'CAP-002', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
-    { from: 'CAP-002', to: 'DATA-890', type: 'REQUIRES_DATA' },  // Requires FraudScoresTable
-    { from: 'CAP-002', to: 'DATA-901', type: 'REQUIRES_DATA' },  // Requires NotificationQueue
+    { from: 'CAP-002', to: 'DATA-012', type: 'CREATE' },      // Creates new applications
+    { from: 'CAP-002', to: 'DATA-012', type: 'UPDATE' },      // Updates application status
+    { from: 'CAP-002', to: 'DATA-789', type: 'READ' },        // Reads customer data
+    { from: 'CAP-002', to: 'DATA-890', type: 'CREATE' },      // Creates fraud scores
+    { from: 'CAP-002', to: 'DATA-901', type: 'CREATE' },      // Creates notification queue entries
 
     // Document Management (CAP-003)
-    { from: 'CAP-003', to: 'DATA-345', type: 'REQUIRES_DATA' },  // Requires DocumentStorage
-    { from: 'CAP-003', to: 'DATA-567', type: 'REQUIRES_DATA' },  // Requires AuditLog
+    { from: 'CAP-003', to: 'DATA-345', type: 'CREATE' },      // Uploads documents
+    { from: 'CAP-003', to: 'DATA-345', type: 'READ' },        // Retrieves documents
+    { from: 'CAP-003', to: 'DATA-345', type: 'DEACTIVATE' },  // Archives/deletes documents
+    { from: 'CAP-003', to: 'DATA-567', type: 'CREATE' },      // Creates audit log entries
 
     // Customer Service & Support (CAP-004)
-    { from: 'CAP-004', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
-    { from: 'CAP-004', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
-    { from: 'CAP-004', to: 'DATA-678', type: 'REQUIRES_DATA' },  // Requires UserSessionCache
+    { from: 'CAP-004', to: 'DATA-789', type: 'READ' },        // Reads customer information
+    { from: 'CAP-004', to: 'DATA-012', type: 'READ' },        // Reads application status
+    { from: 'CAP-004', to: 'DATA-012', type: 'UPDATE' },      // Updates application details
+    { from: 'CAP-004', to: 'DATA-678', type: 'READ' },        // Reads session cache
 
     // Payment Processing (CAP-005)
-    { from: 'CAP-005', to: 'DATA-456', type: 'REQUIRES_DATA' },  // Requires TransactionTable
-    { from: 'CAP-005', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
-    { from: 'CAP-005', to: 'DATA-567', type: 'REQUIRES_DATA' },  // Requires AuditLog
+    { from: 'CAP-005', to: 'DATA-456', type: 'CREATE' },      // Creates transactions
+    { from: 'CAP-005', to: 'DATA-456', type: 'READ' },        // Reads transaction history
+    { from: 'CAP-005', to: 'DATA-789', type: 'READ' },        // Reads customer payment info
+    { from: 'CAP-005', to: 'DATA-567', type: 'CREATE' },      // Creates audit log for payments
 
     // Risk Assessment & Fraud Detection (CAP-006)
-    { from: 'CAP-006', to: 'DATA-890', type: 'REQUIRES_DATA' },  // Requires FraudScoresTable
-    { from: 'CAP-006', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
-    { from: 'CAP-006', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
-    { from: 'CAP-006', to: 'DATA-456', type: 'REQUIRES_DATA' },  // Requires TransactionTable
+    { from: 'CAP-006', to: 'DATA-890', type: 'CREATE' },      // Creates fraud scores
+    { from: 'CAP-006', to: 'DATA-890', type: 'UPDATE' },      // Updates fraud scores
+    { from: 'CAP-006', to: 'DATA-789', type: 'READ' },        // Reads customer data for analysis
+    { from: 'CAP-006', to: 'DATA-012', type: 'READ' },        // Reads application data
+    { from: 'CAP-006', to: 'DATA-456', type: 'READ' },        // Reads transaction data
 
     // Compliance & Reporting (CAP-007)
-    { from: 'CAP-007', to: 'DATA-567', type: 'REQUIRES_DATA' },  // Requires AuditLog
-    { from: 'CAP-007', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
-    { from: 'CAP-007', to: 'DATA-456', type: 'REQUIRES_DATA' },  // Requires TransactionTable
-    { from: 'CAP-007', to: 'DATA-345', type: 'REQUIRES_DATA' },  // Requires DocumentStorage
+    { from: 'CAP-007', to: 'DATA-567', type: 'READ' },        // Reads audit logs
+    { from: 'CAP-007', to: 'DATA-789', type: 'READ' },        // Reads customer data for reports
+    { from: 'CAP-007', to: 'DATA-456', type: 'READ' },        // Reads transaction data
+    { from: 'CAP-007', to: 'DATA-345', type: 'READ' },        // Reads documents for compliance
 
     // Analytics & Business Intelligence (CAP-008)
-    { from: 'CAP-008', to: 'DATA-123', type: 'REQUIRES_DATA' },  // Requires AnalyticsDataWarehouse
-    { from: 'CAP-008', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
-    { from: 'CAP-008', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
-    { from: 'CAP-008', to: 'DATA-456', type: 'REQUIRES_DATA' }   // Requires TransactionTable
+    { from: 'CAP-008', to: 'DATA-123', type: 'CREATE' },      // Creates analytics records
+    { from: 'CAP-008', to: 'DATA-123', type: 'READ' },        // Reads analytics data
+    { from: 'CAP-008', to: 'DATA-789', type: 'READ' },        // Reads customer data
+    { from: 'CAP-008', to: 'DATA-012', type: 'READ' },        // Reads application data
+    { from: 'CAP-008', to: 'DATA-456', type: 'READ' }         // Reads transaction data
   ];
 }
 

@@ -101,6 +101,7 @@ async function performSync() {
               c.owner = $owner,
               c.criticality = $criticality,
               c.maturity = $maturity,
+              c.application = $application,
               c.lastSyncedAt = datetime()
           `,
           {
@@ -111,6 +112,7 @@ async function performSync() {
             owner: cap.owner || '',
             criticality: cap.criticality || 'Medium',
             maturity: cap.maturity || 'Defined',
+            application: cap.application || '',
           }
         );
       }
@@ -208,6 +210,7 @@ async function performSync() {
               d.columns = $columns,
               d.recordCount = $recordCount,
               d.growthRate = $growthRate,
+              d.application = $application,
               d.lastSyncedAt = datetime()
           `,
           {
@@ -220,6 +223,7 @@ async function performSync() {
             columns: data.columns || [],
             recordCount: data.recordCount || 0,
             growthRate: data.growthRate || '',
+            application: data.application || '',
           }
         );
       }
