@@ -112,6 +112,33 @@ async function performSync() {
       }
 
       console.log(`[${jobId}] Successfully synced ${leanixData.data?.length || 0} applications to Neo4j`);
+
+      // Fetch and sync relationships
+      console.log(`[${jobId}] Fetching relationships from LeanIX...`);
+      const { data: relationshipsData } = await axios.get(`${LEANIX_API_URL}/relationships`);
+
+      let relationshipsSynced = 0;
+      for (const rel of relationshipsData.data || []) {
+        try {
+          await session.run(
+            `
+            MATCH (from {id: $fromId})
+            MATCH (to {id: $toId})
+            MERGE (from)-[r:${rel.type.replace(/[^A-Z_]/g, '_')}]->(to)
+            SET r.syncedAt = datetime()
+            `,
+            {
+              fromId: rel.from,
+              toId: rel.to,
+            }
+          );
+          relationshipsSynced++;
+        } catch (error) {
+          console.warn(`[${jobId}] Failed to create relationship ${rel.from} -[${rel.type}]-> ${rel.to}: ${error.message}`);
+        }
+      }
+
+      console.log(`[${jobId}] Successfully synced ${relationshipsSynced} relationships to Neo4j`);
     } finally {
       await session.close();
     }
