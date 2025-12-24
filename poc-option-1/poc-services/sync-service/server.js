@@ -84,7 +84,7 @@ async function performSync() {
 
     // Fetch data from LeanIX mock API
     console.log(`[${jobId}] Fetching data from LeanIX...`);
-    const { data: leanixData } = await axios.get(`${LEANIX_API_URL}/api/applications`);
+    const { data: leanixData } = await axios.get(`${LEANIX_API_URL}/applications`);
 
     console.log(`[${jobId}] Received ${leanixData.data?.length || 0} applications`);
 
