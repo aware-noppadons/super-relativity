@@ -23,6 +23,10 @@ This document provides sample Neo4j Cypher queries for exploring the complete en
 - **USES** (13 relationships) - Application uses DataObject
 - **REQUIRES** (6 relationships) - Application requires something
 - **CALLS** (1 relationship) - Application calls another Application
+- **REQUIRES_DATA** (27 relationships) - BusinessCapability requires DataObject
+- **HAS_COMPONENT** (8 relationships) - Application has Component
+- **MODIFIES** (4 relationships) - Component modifies DataObject
+- **READS** (8 relationships) - Component reads DataObject
 
 ---
 
@@ -163,7 +167,112 @@ ORDER BY data.sensitivity DESC
 
 ---
 
-## 4. End-to-End Traceability
+## 4. Business Capability to Data Object Mapping
+
+### View Business Capabilities and Their Required Data
+
+```cypher
+// Show which data objects are required by each business capability
+MATCH (cap:BusinessCapability)-[:REQUIRES_DATA]->(data:DataObject)
+RETURN cap.name as Capability,
+       cap.criticality as Criticality,
+       collect(data.name) as RequiredData,
+       count(data) as DataObjectCount
+ORDER BY cap.criticality DESC, DataObjectCount DESC
+```
+
+**Example Results:**
+| Capability | Criticality | RequiredData | DataObjectCount |
+|------------|-------------|--------------|-----------------|
+| Analytics & Business Intelligence | Medium | [TransactionTable, ApplicationTable, CustomerTable, AnalyticsDataWarehouse] | 4 |
+| Risk Assessment & Fraud Detection | Critical | [FraudScoresTable, CustomerTable, ApplicationTable, TransactionTable] | 4 |
+| Application Processing | Critical | [NotificationQueue, FraudScoresTable, CustomerTable, ApplicationTable] | 4 |
+
+### Data Criticality by Business Capability
+
+```cypher
+// Find critical data objects based on capability usage
+MATCH (cap:BusinessCapability)-[:REQUIRES_DATA]->(data:DataObject)
+WHERE cap.criticality = 'Critical'
+WITH data, collect(cap.name) as CriticalCapabilities, count(cap) as CriticalCapCount
+RETURN data.name as DataObject,
+       data.sensitivity as Sensitivity,
+       CriticalCapCount,
+       CriticalCapabilities
+ORDER BY CriticalCapCount DESC, data.sensitivity DESC
+```
+
+### PII Data Usage by Business Capabilities
+
+```cypher
+// Find which business capabilities require PII data
+MATCH (cap:BusinessCapability)-[:REQUIRES_DATA]->(data:DataObject)
+WHERE data.sensitivity = 'PII'
+RETURN cap.name as Capability,
+       cap.criticality as Criticality,
+       collect(data.name) as PIIData,
+       count(data) as PIIDataCount
+ORDER BY PIIDataCount DESC
+```
+
+### Business Capability Data Dependency
+
+```cypher
+// Full view of capability data dependencies with sensitivity
+MATCH (cap:BusinessCapability)-[:REQUIRES_DATA]->(data:DataObject)
+RETURN cap.name as Capability,
+       cap.criticality as CapabilityCriticality,
+       data.name as DataObject,
+       data.type as DataType,
+       data.sensitivity as Sensitivity,
+       data.database as Database
+ORDER BY cap.name, data.sensitivity DESC
+```
+
+### Find Shared Data Across Capabilities
+
+```cypher
+// Find data objects required by multiple business capabilities
+MATCH (data:DataObject)<-[:REQUIRES_DATA]-(cap:BusinessCapability)
+WITH data, collect(cap.name) as Capabilities, count(cap) as CapabilityCount
+WHERE CapabilityCount > 1
+RETURN data.name as SharedDataObject,
+       data.sensitivity as Sensitivity,
+       CapabilityCount,
+       Capabilities
+ORDER BY CapabilityCount DESC, data.sensitivity DESC
+```
+
+**Example Results:**
+| SharedDataObject | Sensitivity | CapabilityCount | Capabilities |
+|------------------|-------------|-----------------|--------------|
+| CustomerTable | PII | 6 | [Customer Onboarding, Application Processing, Customer Service, Payment Processing, Risk Assessment, Compliance] |
+| ApplicationTable | Standard | 4 | [Application Processing, Customer Service, Risk Assessment, Analytics] |
+
+### Capability Impact Analysis by Data
+
+```cypher
+// If a data object fails, which capabilities are impacted?
+MATCH (data:DataObject {name: 'CustomerTable'})<-[:REQUIRES_DATA]-(cap:BusinessCapability)
+RETURN data.name as DataObject,
+       data.sensitivity as Sensitivity,
+       collect(cap.name) as ImpactedCapabilities,
+       count(cap) as ImpactRadius
+```
+
+### Business Capability to Data Visualization
+
+```cypher
+// Visualize complete capability-to-data mapping
+MATCH (cap:BusinessCapability)-[:REQUIRES_DATA]->(data:DataObject)
+RETURN cap, data
+ORDER BY cap.name
+LIMIT 50
+```
+
+---
+
+## 5. End-to-End Traceability
 
 ### Business Capability → Application → Data (Complete Chain)
 

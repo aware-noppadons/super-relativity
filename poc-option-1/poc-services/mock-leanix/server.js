@@ -270,7 +270,53 @@ function initializeDefaultData() {
 
     // Document Management (APP-789) Component Data Relationships
     { from: 'COMP-007', to: 'DATA-345', type: 'MODIFIES' }, // Upload Handler modifies DocumentStorage
-    { from: 'COMP-008', to: 'DATA-345', type: 'READS' }      // Retrieval Service reads DocumentStorage
+    { from: 'COMP-008', to: 'DATA-345', type: 'READS' },     // Retrieval Service reads DocumentStorage
+
+    // Business Capability to Data Object Relationships
+    // Shows which data is critical for each business capability
+
+    // Customer Onboarding (CAP-001)
+    { from: 'CAP-001', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
+    { from: 'CAP-001', to: 'DATA-345', type: 'REQUIRES_DATA' },  // Requires DocumentStorage
+    { from: 'CAP-001', to: 'DATA-678', type: 'REQUIRES_DATA' },  // Requires UserSessionCache
+
+    // Application Processing (CAP-002)
+    { from: 'CAP-002', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
+    { from: 'CAP-002', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
+    { from: 'CAP-002', to: 'DATA-890', type: 'REQUIRES_DATA' },  // Requires FraudScoresTable
+    { from: 'CAP-002', to: 'DATA-901', type: 'REQUIRES_DATA' },  // Requires NotificationQueue
+
+    // Document Management (CAP-003)
+    { from: 'CAP-003', to: 'DATA-345', type: 'REQUIRES_DATA' },  // Requires DocumentStorage
+    { from: 'CAP-003', to: 'DATA-567', type: 'REQUIRES_DATA' },  // Requires AuditLog
+
+    // Customer Service & Support (CAP-004)
+    { from: 'CAP-004', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
+    { from: 'CAP-004', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
+    { from: 'CAP-004', to: 'DATA-678', type: 'REQUIRES_DATA' },  // Requires UserSessionCache
+
+    // Payment Processing (CAP-005)
+    { from: 'CAP-005', to: 'DATA-456', type: 'REQUIRES_DATA' },  // Requires TransactionTable
+    { from: 'CAP-005', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
+    { from: 'CAP-005', to: 'DATA-567', type: 'REQUIRES_DATA' },  // Requires AuditLog
+
+    // Risk Assessment & Fraud Detection (CAP-006)
+    { from: 'CAP-006', to: 'DATA-890', type: 'REQUIRES_DATA' },  // Requires FraudScoresTable
+    { from: 'CAP-006', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
+    { from: 'CAP-006', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
+    { from: 'CAP-006', to: 'DATA-456', type: 'REQUIRES_DATA' },  // Requires TransactionTable
+
+    // Compliance & Reporting (CAP-007)
+    { from: 'CAP-007', to: 'DATA-567', type: 'REQUIRES_DATA' },  // Requires AuditLog
+    { from: 'CAP-007', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
+    { from: 'CAP-007', to: 'DATA-456', type: 'REQUIRES_DATA' },  // Requires TransactionTable
+    { from: 'CAP-007', to: 'DATA-345', type: 'REQUIRES_DATA' },  // Requires DocumentStorage
+
+    // Analytics & Business Intelligence (CAP-008)
+    { from: 'CAP-008', to: 'DATA-123', type: 'REQUIRES_DATA' },  // Requires AnalyticsDataWarehouse
+    { from: 'CAP-008', to: 'DATA-789', type: 'REQUIRES_DATA' },  // Requires CustomerTable
+    { from: 'CAP-008', to: 'DATA-012', type: 'REQUIRES_DATA' },  // Requires ApplicationTable
+    { from: 'CAP-008', to: 'DATA-456', type: 'REQUIRES_DATA' }   // Requires TransactionTable
   ];
 }
 
