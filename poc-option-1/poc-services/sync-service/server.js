@@ -84,13 +84,87 @@ async function performSync() {
 
     // Fetch data from LeanIX mock API
     console.log(`[${jobId}] Fetching data from LeanIX...`);
-    const { data: leanixData } = await axios.get(`${LEANIX_API_URL}/applications`);
-
-    console.log(`[${jobId}] Received ${leanixData.data?.length || 0} applications`);
-
-    // Sync to Neo4j
     const session = neo4jDriver.session();
+    let totalEntities = 0;
+
     try {
+      // 1. Sync Business Capabilities
+      console.log(`[${jobId}] Syncing business capabilities...`);
+      const { data: capabilitiesData } = await axios.get(`${LEANIX_API_URL}/capabilities`);
+      for (const cap of capabilitiesData.data || []) {
+        await session.run(
+          `
+          MERGE (c:BusinessCapability {id: $id})
+          SET c.name = $name,
+              c.level = $level,
+              c.description = $description,
+              c.owner = $owner,
+              c.criticality = $criticality,
+              c.maturity = $maturity,
+              c.lastSyncedAt = datetime()
+          `,
+          {
+            id: cap.id,
+            name: cap.name,
+            level: cap.level || 'L1',
+            description: cap.description || '',
+            owner: cap.owner || '',
+            criticality: cap.criticality || 'Medium',
+            maturity: cap.maturity || 'Defined',
+          }
+        );
+      }
+      console.log(`[${jobId}] Synced ${capabilitiesData.data?.length || 0} business capabilities`);
+      totalEntities += capabilitiesData.data?.length || 0;
+
+      // 2. Sync Requirements
+      console.log(`[${jobId}] Syncing requirements...`);
+      const { data: requirementsData } = await axios.get(`${LEANIX_API_URL}/requirements`);
+      for (const req of requirementsData.data || []) {
+        await session.run(
+          `
+          MERGE (r:Requirement {id: $id})
+          SET r.name = $name,
+              r.type = $type,
+              r.priority = $priority,
+              r.status = $status,
+              r.owner = $owner,
+              r.description = $description,
+              r.createdDate = $createdDate,
+              r.compliance = $compliance,
+              r.lastSyncedAt = datetime()
+          `,
+          {
+            id: req.id,
+            name: req.name,
+            type: req.type || 'Functional Requirement',
+            priority: req.priority || 'Medium',
+            status: req.status || 'Draft',
+            owner: req.owner || '',
+            description: req.description || '',
+            createdDate: req.createdDate || '',
+            compliance: req.compliance || [],
+          }
+        );
+
+        // Link requirement to capability if exists
+        if (req.capability) {
+          await session.run(
+            `
+            MATCH (r:Requirement {id: $reqId})
+            MATCH (c:BusinessCapability {id: $capId})
+            MERGE (r)-[:SUPPORTS]->(c)
+            `,
+            { reqId: req.id, capId: req.capability }
+          );
+        }
+      }
+      console.log(`[${jobId}] Synced ${requirementsData.data?.length || 0} requirements`);
+      totalEntities += requirementsData.data?.length || 0;
+
+      // 3. Sync Applications
+      console.log(`[${jobId}] Syncing applications...`);
+      const { data: leanixData } = await axios.get(`${LEANIX_API_URL}/applications`);
       for (const app of leanixData.data || []) {
         await session.run(
           `
@@ -99,6 +173,9 @@ async function performSync() {
               a.description = $description,
               a.status = $status,
               a.businessCriticality = $businessCriticality,
+              a.type = $type,
+              a.lifecycle = $lifecycle,
+              a.techStack = $techStack,
               a.lastSyncedAt = datetime()
           `,
           {
@@ -107,11 +184,47 @@ async function performSync() {
             description: app.description || '',
             status: app.status || 'ACTIVE',
             businessCriticality: app.businessCriticality || 'MEDIUM',
+            type: app.type || 'Application',
+            lifecycle: app.lifecycle || 'Active',
+            techStack: app.techStack || [],
           }
         );
       }
+      console.log(`[${jobId}] Synced ${leanixData.data?.length || 0} applications`);
+      totalEntities += leanixData.data?.length || 0;
 
-      console.log(`[${jobId}] Successfully synced ${leanixData.data?.length || 0} applications to Neo4j`);
+      // 4. Sync Data Objects
+      console.log(`[${jobId}] Syncing data objects...`);
+      const { data: dataObjectsData } = await axios.get(`${LEANIX_API_URL}/data-objects`);
+      for (const data of dataObjectsData.data || []) {
+        await session.run(
+          `
+          MERGE (d:DataObject {id: $id})
+          SET d.name = $name,
+              d.type = $type,
+              d.database = $database,
+              d.schema = $schema,
+              d.sensitivity = $sensitivity,
+              d.columns = $columns,
+              d.recordCount = $recordCount,
+              d.growthRate = $growthRate,
+              d.lastSyncedAt = datetime()
+          `,
+          {
+            id: data.id,
+            name: data.name,
+            type: data.type || 'Database Table',
+            database: data.database || '',
+            schema: data.schema || '',
+            sensitivity: data.sensitivity || 'Standard',
+            columns: data.columns || [],
+            recordCount: data.recordCount || 0,
+            growthRate: data.growthRate || '',
+          }
+        );
+      }
+      console.log(`[${jobId}] Synced ${dataObjectsData.data?.length || 0} data objects`);
+      totalEntities += dataObjectsData.data?.length || 0;
 
       // Fetch and sync relationships
       console.log(`[${jobId}] Fetching relationships from LeanIX...`);
@@ -149,7 +262,7 @@ async function performSync() {
       JSON.stringify({
         jobId,
         timestamp: new Date().toISOString(),
-        count: leanixData.data?.length || 0,
+        totalEntities,
       }),
       { EX: 3600 } // Expire after 1 hour
     );
@@ -157,10 +270,10 @@ async function performSync() {
     // Update sync job status
     await pgPool.query(
       'UPDATE sync_jobs SET status = $1, completed_at = $2, records_synced = $3 WHERE job_id = $4',
-      ['completed', new Date(), leanixData.data?.length || 0, jobId]
+      ['completed', new Date(), totalEntities, jobId]
     );
 
-    console.log(`[${jobId}] Sync completed successfully`);
+    console.log(`[${jobId}] Sync completed successfully - ${totalEntities} entities synced`);
   } catch (error) {
     console.error(`[${jobId}] Sync failed:`, error.message);
 
