@@ -20,6 +20,7 @@ app.use(bodyParser.json());
 // In-memory data store (simulates LeanIX)
 let businessCapabilities = [];
 let applications = [];
+let components = [];
 let requirements = [];
 let dataObjects = [];
 let infrastructure = [];
@@ -34,6 +35,7 @@ function loadSampleData() {
     const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
     businessCapabilities = data.businessCapabilities || [];
     applications = data.applications || [];
+    components = data.components || [];
     requirements = data.requirements || [];
     dataObjects = data.dataObjects || [];
     infrastructure = data.infrastructure || [];
@@ -42,6 +44,7 @@ function loadSampleData() {
     console.log(`✅ Sample data loaded successfully:`);
     console.log(`   - ${businessCapabilities.length} business capabilities`);
     console.log(`   - ${applications.length} applications`);
+    console.log(`   - ${components.length} components`);
     console.log(`   - ${requirements.length} requirements`);
     console.log(`   - ${dataObjects.length} data objects`);
     console.log(`   - ${infrastructure.length} infrastructure components`);
@@ -147,16 +150,127 @@ function initializeDefaultData() {
     }
   ];
 
+  // Sample Components
+  components = [
+    // Customer Portal Components
+    {
+      id: 'COMP-001',
+      name: 'Registration Form',
+      application: 'APP-123',
+      type: 'UI Component',
+      technology: 'React',
+      description: 'Customer registration and application submission form',
+      responsibilities: ['Validate customer input', 'Create new customer records', 'Submit applications']
+    },
+    {
+      id: 'COMP-002',
+      name: 'Status Dashboard',
+      application: 'APP-123',
+      type: 'UI Component',
+      technology: 'React',
+      description: 'Display application status and customer information',
+      responsibilities: ['Show application progress', 'Display customer profile', 'Real-time status updates']
+    },
+    {
+      id: 'COMP-003',
+      name: 'Authentication Service',
+      application: 'APP-123',
+      type: 'Backend Module',
+      technology: 'Node.js',
+      description: 'User authentication and session management',
+      responsibilities: ['User login/logout', 'Session management', 'JWT token generation']
+    },
+    // Application Processing API Components
+    {
+      id: 'COMP-004',
+      name: 'Application Validator',
+      application: 'APP-456',
+      type: 'Service Layer',
+      technology: 'Java Spring',
+      description: 'Validates application data and business rules',
+      responsibilities: ['Validate application data', 'Check business rules', 'Update application status']
+    },
+    {
+      id: 'COMP-005',
+      name: 'Fraud Detector',
+      application: 'APP-456',
+      type: 'Service Layer',
+      technology: 'Java Spring',
+      description: 'Analyzes applications for fraud patterns',
+      responsibilities: ['Calculate fraud scores', 'Flag suspicious applications', 'Store fraud analysis results']
+    },
+    {
+      id: 'COMP-006',
+      name: 'Customer Lookup Service',
+      application: 'APP-456',
+      type: 'Data Access Layer',
+      technology: 'Java Spring Data',
+      description: 'Retrieves and validates customer information',
+      responsibilities: ['Fetch customer data', 'Validate customer exists', 'Check customer eligibility']
+    },
+    // Document Management Service Components
+    {
+      id: 'COMP-007',
+      name: 'Document Upload Handler',
+      application: 'APP-789',
+      type: 'API Endpoint',
+      technology: 'FastAPI',
+      description: 'Handles document uploads and storage',
+      responsibilities: ['Accept file uploads', 'Validate file types', 'Store in S3', 'Update metadata']
+    },
+    {
+      id: 'COMP-008',
+      name: 'Document Retrieval Service',
+      application: 'APP-789',
+      type: 'API Endpoint',
+      technology: 'FastAPI',
+      description: 'Retrieves documents from storage',
+      responsibilities: ['Fetch documents from S3', 'Generate signed URLs', 'Audit document access']
+    }
+  ];
+
   // Sample Relationships
   relationships = [
+    // Requirements to Applications
     { from: 'REQ-001', to: 'APP-123', type: 'IMPLEMENTED_BY' },
     { from: 'REQ-001', to: 'APP-456', type: 'IMPLEMENTED_BY' },
     { from: 'REQ-002', to: 'APP-123', type: 'IMPLEMENTED_BY' },
     { from: 'REQ-003', to: 'APP-789', type: 'IMPLEMENTED_BY' },
+
+    // Applications to Data (high-level)
     { from: 'APP-123', to: 'DATA-789', type: 'USES' },
     { from: 'APP-456', to: 'DATA-012', type: 'USES' },
     { from: 'APP-456', to: 'DATA-789', type: 'USES' },
-    { from: 'APP-789', to: 'DATA-345', type: 'USES' }
+    { from: 'APP-789', to: 'DATA-345', type: 'USES' },
+
+    // Applications to Components
+    { from: 'APP-123', to: 'COMP-001', type: 'HAS_COMPONENT' },
+    { from: 'APP-123', to: 'COMP-002', type: 'HAS_COMPONENT' },
+    { from: 'APP-123', to: 'COMP-003', type: 'HAS_COMPONENT' },
+    { from: 'APP-456', to: 'COMP-004', type: 'HAS_COMPONENT' },
+    { from: 'APP-456', to: 'COMP-005', type: 'HAS_COMPONENT' },
+    { from: 'APP-456', to: 'COMP-006', type: 'HAS_COMPONENT' },
+    { from: 'APP-789', to: 'COMP-007', type: 'HAS_COMPONENT' },
+    { from: 'APP-789', to: 'COMP-008', type: 'HAS_COMPONENT' },
+
+    // Customer Portal (APP-123) Component Data Relationships
+    // EXAMPLE: Registration Form (COMP-001) MODIFIES CustomerTable, Status Dashboard (COMP-002) READS CustomerTable
+    { from: 'COMP-001', to: 'DATA-789', type: 'MODIFIES' },  // Registration Form modifies CustomerTable
+    { from: 'COMP-001', to: 'DATA-012', type: 'MODIFIES' }, // Registration Form modifies ApplicationTable
+    { from: 'COMP-002', to: 'DATA-789', type: 'READS' },     // Status Dashboard reads CustomerTable
+    { from: 'COMP-002', to: 'DATA-012', type: 'READS' },     // Status Dashboard reads ApplicationTable
+    { from: 'COMP-003', to: 'DATA-789', type: 'READS' },     // Authentication reads CustomerTable
+
+    // Application Processing API (APP-456) Component Data Relationships
+    { from: 'COMP-004', to: 'DATA-012', type: 'MODIFIES' }, // Validator modifies ApplicationTable
+    { from: 'COMP-004', to: 'DATA-789', type: 'READS' },     // Validator reads CustomerTable
+    { from: 'COMP-005', to: 'DATA-012', type: 'READS' },     // Fraud Detector reads ApplicationTable
+    { from: 'COMP-005', to: 'DATA-789', type: 'READS' },     // Fraud Detector reads CustomerTable (for scoring)
+    { from: 'COMP-006', to: 'DATA-789', type: 'READS' },     // Customer Lookup reads CustomerTable
+
+    // Document Management (APP-789) Component Data Relationships
+    { from: 'COMP-007', to: 'DATA-345', type: 'MODIFIES' }, // Upload Handler modifies DocumentStorage
+    { from: 'COMP-008', to: 'DATA-345', type: 'READS' }      // Retrieval Service reads DocumentStorage
   ];
 }
 
@@ -232,6 +346,36 @@ app.post('/applications', (req, res) => {
   };
   applications.push(newApp);
   res.status(201).json({ data: newApp });
+});
+
+// Components
+app.get('/components', (req, res) => {
+  const { application } = req.query;
+  let filtered = components;
+
+  if (application) {
+    filtered = components.filter(c => c.application === application);
+  }
+
+  res.json({ data: filtered, count: filtered.length });
+});
+
+app.get('/components/:id', (req, res) => {
+  const component = components.find(c => c.id === req.params.id);
+  if (component) {
+    res.json({ data: component });
+  } else {
+    res.status(404).json({ error: 'Component not found' });
+  }
+});
+
+app.post('/components', (req, res) => {
+  const newComponent = {
+    id: `COMP-${uuidv4().substring(0, 8)}`,
+    ...req.body
+  };
+  components.push(newComponent);
+  res.status(201).json({ data: newComponent });
 });
 
 // Requirements
@@ -375,6 +519,7 @@ app.get('/sync/all', (req, res) => {
   res.json({
     businessCapabilities,
     applications,
+    components,
     requirements,
     dataObjects,
     infrastructure,
@@ -382,8 +527,8 @@ app.get('/sync/all', (req, res) => {
     relationships,
     timestamp: new Date().toISOString(),
     statistics: {
-      totalEntities: businessCapabilities.length + applications.length + requirements.length +
-                     dataObjects.length + infrastructure.length,
+      totalEntities: businessCapabilities.length + applications.length + components.length +
+                     requirements.length + dataObjects.length + infrastructure.length,
       totalRelationships: relationships.length
     }
   });

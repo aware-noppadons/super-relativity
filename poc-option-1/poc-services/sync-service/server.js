@@ -226,6 +226,35 @@ async function performSync() {
       console.log(`[${jobId}] Synced ${dataObjectsData.data?.length || 0} data objects`);
       totalEntities += dataObjectsData.data?.length || 0;
 
+      // 5. Sync Components
+      console.log(`[${jobId}] Syncing components...`);
+      const { data: componentsData } = await axios.get(`${LEANIX_API_URL}/components`);
+      for (const comp of componentsData.data || []) {
+        await session.run(
+          `
+          MERGE (c:Component {id: $id})
+          SET c.name = $name,
+              c.application = $application,
+              c.type = $type,
+              c.technology = $technology,
+              c.description = $description,
+              c.responsibilities = $responsibilities,
+              c.lastSyncedAt = datetime()
+          `,
+          {
+            id: comp.id,
+            name: comp.name,
+            application: comp.application || '',
+            type: comp.type || 'Component',
+            technology: comp.technology || '',
+            description: comp.description || '',
+            responsibilities: comp.responsibilities || [],
+          }
+        );
+      }
+      console.log(`[${jobId}] Synced ${componentsData.data?.length || 0} components`);
+      totalEntities += componentsData.data?.length || 0;
+
       // Fetch and sync relationships
       console.log(`[${jobId}] Fetching relationships from LeanIX...`);
       const { data: relationshipsData } = await axios.get(`${LEANIX_API_URL}/relationships`);
