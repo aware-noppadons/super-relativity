@@ -28,6 +28,7 @@ Application → BusinessCapability → Component → DataObject
 | **Component** | 8 | Application components and modules | Via HAS_COMPONENT |
 | **DataObject** | 10 | Database tables, caches, queues, storage | ✓ Yes |
 | **Requirement** | 3 | Business and technical requirements | Via IMPLEMENTED_BY |
+| **Server** | 15 | Physical/virtual servers across environments | Via INSTALLED_ON |
 
 ### Relationship Types
 | Relationship | Count | Description |
@@ -43,6 +44,9 @@ Application → BusinessCapability → Component → DataObject
 | **READ** | 19 | BusinessCapability reads DataObject |
 | **UPDATE** | 3 | BusinessCapability updates DataObject |
 | **DEACTIVATE** | 1 | BusinessCapability deactivates DataObject |
+| **INSTALLED_ON** | 26 | Component installed on Server(s) for deployment |
+| **LOAD_BALANCES_WITH** | 4 | Server load balances with another Server |
+| **WORKS_WITH** | 14 | Server communicates/works with another Server |
 
 ---
 
@@ -565,11 +569,208 @@ ORDER BY CapabilityCount DESC
 
 ---
 
-## 9. Mock LeanIX API Query Examples
+## 9. Server Infrastructure and Deployment Queries
+
+### 9.1 Query Servers by Environment
+
+```cypher
+// Get all servers grouped by environment
+MATCH (s:Server)
+RETURN s.environment as Environment,
+       count(s) as ServerCount,
+       collect(s.name) as Servers
+ORDER BY s.environment
+```
+
+```cypher
+// Get production servers with details
+MATCH (s:Server {environment: 'prod'})
+RETURN s.name as ServerName,
+       s.hostname as Hostname,
+       s.ip as IP,
+       s.purpose as Purpose,
+       s.cpu as CPU,
+       s.memory as Memory,
+       s.datacenter as Datacenter
+ORDER BY s.name
+```
+
+### 9.2 Component Deployment Analysis
+
+```cypher
+// Show where each component is deployed
+MATCH (c:Component)-[:INSTALLED_ON]->(s:Server)
+RETURN c.name as Component,
+       collect(DISTINCT s.environment) as Environments,
+       collect(s.name) as Servers,
+       count(s) as ServerCount
+ORDER BY ServerCount DESC, c.name
+```
+
+```cypher
+// Find components deployed across multiple environments
+MATCH (c:Component)-[:INSTALLED_ON]->(s:Server)
+WITH c, collect(DISTINCT s.environment) as Environments
+WHERE size(Environments) > 1
+RETURN c.name as Component,
+       Environments,
+       size(Environments) as EnvironmentCount
+ORDER BY EnvironmentCount DESC
+```
+
+```cypher
+// Production deployment map
+MATCH (c:Component)-[:INSTALLED_ON]->(s:Server {environment: 'prod'})
+RETURN c.name as Component,
+       collect(s.name) as ProductionServers,
+       collect(s.datacenter) as Datacenters
+ORDER BY c.name
+```
+
+### 9.3 Load Balancing and High Availability
+
+```cypher
+// Find load-balanced server pairs
+MATCH (s1:Server)-[:LOAD_BALANCES_WITH]->(s2:Server)
+WHERE s1.name < s2.name  // Avoid duplicates
+RETURN s1.name as Server1,
+       s2.name as Server2,
+       s1.environment as Environment,
+       s1.purpose as Purpose
+ORDER BY Environment, Server1
+```
+
+```cypher
+// Find components with load-balanced deployments
+MATCH (c:Component)-[:INSTALLED_ON]->(s1:Server)-[:LOAD_BALANCES_WITH]->(s2:Server)
+      <-[:INSTALLED_ON]-(c)
+WHERE s1.name < s2.name
+RETURN c.name as Component,
+       s1.environment as Environment,
+       collect(DISTINCT s1.name) + collect(DISTINCT s2.name) as LoadBalancedServers
+ORDER BY Environment, Component
+```
+
+### 9.4 Server Communication Topology
+
+```cypher
+// Show server-to-server communication in production
+MATCH (s1:Server {environment: 'prod'})-[:WORKS_WITH]->(s2:Server {environment: 'prod'})
+RETURN s1.name as Server,
+       s1.purpose as Purpose,
+       collect(s2.name) as CommunicatesWith
+ORDER BY s1.name
+```
+
+```cypher
+// Find critical servers (high number of connections)
+MATCH (s:Server)-[:WORKS_WITH]-(other:Server)
+WITH s, count(DISTINCT other) as ConnectionCount
+WHERE ConnectionCount >= 2
+RETURN s.name as Server,
+       s.environment as Environment,
+       s.purpose as Purpose,
+       ConnectionCount
+ORDER BY ConnectionCount DESC, s.environment
+```
+
+### 9.5 Complete Deployment Lineage
+
+```cypher
+// Trace from Application to Server deployment
+MATCH (app:Application)-[:HAS_COMPONENT]->(comp:Component)
+      -[:INSTALLED_ON]->(srv:Server)
+RETURN app.name as Application,
+       comp.name as Component,
+       collect(DISTINCT srv.environment) as Environments,
+       collect(srv.name) as Servers
+ORDER BY app.name, comp.name
+```
+
+```cypher
+// Complete path: Requirement → Component → Server → Environment
+MATCH (req:Requirement)-[:IMPLEMENTED_BY]->(comp:Component)
+      -[:INSTALLED_ON]->(srv:Server)
+RETURN req.name as Requirement,
+       comp.name as ImplementedBy,
+       srv.environment as Environment,
+       collect(srv.name) as Servers
+ORDER BY req.priority DESC, Environment
+```
+
+### 9.6 Environment Comparison
+
+```cypher
+// Compare component deployment across environments
+MATCH (c:Component)-[:INSTALLED_ON]->(s:Server)
+WITH c.name as Component, s.environment as Env, count(s) as Count
+RETURN Component,
+       collect({environment: Env, servers: Count}) as Deployments
+ORDER BY Component
+```
+
+```cypher
+// Find components not deployed to production
+MATCH (c:Component)
+WHERE NOT (c)-[:INSTALLED_ON]->(:Server {environment: 'prod'})
+RETURN c.name as ComponentNotInProduction,
+       c.application as Application
+ORDER BY c.name
+```
+
+### 9.7 Datacenter and Region Analysis
+
+```cypher
+// Server distribution by datacenter
+MATCH (s:Server)
+RETURN s.datacenter as Datacenter,
+       s.environment as Environment,
+       count(s) as ServerCount,
+       collect(s.name) as Servers
+ORDER BY Datacenter, Environment
+```
+
+```cypher
+// Find multi-datacenter deployments (for disaster recovery)
+MATCH (c:Component)-[:INSTALLED_ON]->(s:Server {environment: 'prod'})
+WITH c, collect(DISTINCT s.datacenter) as Datacenters
+WHERE size(Datacenters) > 1
+RETURN c.name as Component,
+       Datacenters,
+       'Multi-DC' as DeploymentType
+ORDER BY c.name
+```
+
+### 9.8 Capacity Planning Queries
+
+```cypher
+// Server resource utilization summary
+MATCH (s:Server)
+RETURN s.environment as Environment,
+       count(s) as TotalServers,
+       collect(DISTINCT s.cpu) as CPUConfigs,
+       collect(DISTINCT s.memory) as MemoryConfigs
+ORDER BY Environment
+```
+
+```cypher
+// Components per server (density analysis)
+MATCH (s:Server)<-[:INSTALLED_ON]-(c:Component)
+RETURN s.name as Server,
+       s.environment as Environment,
+       s.purpose as Purpose,
+       count(c) as ComponentCount,
+       collect(c.name) as Components
+ORDER BY ComponentCount DESC
+```
+
+---
+
+## 10. Mock LeanIX API Query Examples
 
 The mock LeanIX API provides REST endpoints to query the source data:
 
-### 9.1 Query Applications
+### 10.1 Query Applications
 ```bash
 # Get all applications
 curl http://localhost:8080/applications
@@ -581,7 +782,7 @@ curl http://localhost:8080/applications/APP-123
 curl http://localhost:8080/applications | jq '.count'
 ```
 
-### 9.2 Query Business Capabilities
+### 10.2 Query Business Capabilities
 ```bash
 # Get all business capabilities
 curl http://localhost:8080/capabilities
@@ -590,7 +791,7 @@ curl http://localhost:8080/capabilities
 curl http://localhost:8080/capabilities/CAP-001
 ```
 
-### 9.3 Query Components
+### 10.3 Query Components
 ```bash
 # Get all components
 curl http://localhost:8080/components
@@ -602,7 +803,7 @@ curl http://localhost:8080/components?application=APP-123
 curl http://localhost:8080/components/COMP-001
 ```
 
-### 9.4 Query Data Objects
+### 10.4 Query Data Objects
 ```bash
 # Get all data objects
 curl http://localhost:8080/data-objects
@@ -611,7 +812,25 @@ curl http://localhost:8080/data-objects
 curl http://localhost:8080/data-objects/DATA-789
 ```
 
-### 9.5 Query Relationships
+### 10.5 Query Servers
+```bash
+# Get all servers
+curl http://localhost:8080/servers
+
+# Get servers by environment
+curl http://localhost:8080/servers?environment=prod
+
+# Get servers by datacenter
+curl http://localhost:8080/servers?datacenter=DC1
+
+# Get specific server
+curl http://localhost:8080/servers/SRV-001
+
+# Count servers by environment
+curl http://localhost:8080/servers?environment=prod | jq '.count'
+```
+
+### 10.6 Query Relationships
 ```bash
 # Get all relationships
 curl http://localhost:8080/relationships
@@ -622,11 +841,11 @@ curl http://localhost:8080/sync/all
 
 ---
 
-## 10. GraphQL API Query Examples
+## 11. GraphQL API Query Examples
 
 The GraphQL API provides a unified query interface:
 
-### 10.1 Query Application with Components
+### 11.1 Query Application with Components
 ```graphql
 query GetApplicationDetails {
   application(name: "Customer Portal") {
@@ -641,7 +860,7 @@ query GetApplicationDetails {
 }
 ```
 
-### 10.2 Query Capability Lineage
+### 11.2 Query Capability Lineage
 ```graphql
 query GetCapabilityLineage {
   businessCapability(name: "Customer Onboarding") {
@@ -658,7 +877,7 @@ query GetCapabilityLineage {
 }
 ```
 
-### 10.3 Query Data Lineage
+### 11.3 Query Data Lineage
 ```graphql
 query GetDataLineage {
   dataObject(name: "CustomerTable") {

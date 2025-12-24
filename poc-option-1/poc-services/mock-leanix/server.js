@@ -369,6 +369,225 @@ function initializeDefaultData() {
     }
   ];
 
+  // Sample Servers
+  servers = [
+    // Production Web Servers (Load Balanced)
+    {
+      id: 'SRV-001',
+      name: 'web-prod-01',
+      hostname: 'web-prod-01.company.com',
+      ip: '10.1.1.11',
+      environment: 'prod',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '8 vCPU',
+      memory: '16GB',
+      status: 'active',
+      purpose: 'Web Application Server'
+    },
+    {
+      id: 'SRV-002',
+      name: 'web-prod-02',
+      hostname: 'web-prod-02.company.com',
+      ip: '10.1.1.12',
+      environment: 'prod',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '8 vCPU',
+      memory: '16GB',
+      status: 'active',
+      purpose: 'Web Application Server'
+    },
+    {
+      id: 'SRV-003',
+      name: 'api-prod-01',
+      hostname: 'api-prod-01.company.com',
+      ip: '10.1.2.11',
+      environment: 'prod',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '16 vCPU',
+      memory: '32GB',
+      status: 'active',
+      purpose: 'API Backend Server'
+    },
+    {
+      id: 'SRV-004',
+      name: 'api-prod-02',
+      hostname: 'api-prod-02.company.com',
+      ip: '10.1.2.12',
+      environment: 'prod',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC2',
+      cpu: '16 vCPU',
+      memory: '32GB',
+      status: 'active',
+      purpose: 'API Backend Server'
+    },
+    {
+      id: 'SRV-005',
+      name: 'db-prod-01',
+      hostname: 'db-prod-01.company.com',
+      ip: '10.1.3.11',
+      environment: 'prod',
+      os: 'Red Hat Enterprise Linux 8',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '32 vCPU',
+      memory: '128GB',
+      status: 'active',
+      purpose: 'Primary Database Server'
+    },
+    {
+      id: 'SRV-006',
+      name: 'cache-prod-01',
+      hostname: 'cache-prod-01.company.com',
+      ip: '10.1.4.11',
+      environment: 'prod',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '4 vCPU',
+      memory: '32GB',
+      status: 'active',
+      purpose: 'Redis Cache Server'
+    },
+    {
+      id: 'SRV-007',
+      name: 'fraud-prod-01',
+      hostname: 'fraud-prod-01.company.com',
+      ip: '10.1.5.11',
+      environment: 'prod',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '16 vCPU',
+      memory: '64GB',
+      status: 'active',
+      purpose: 'Fraud Detection ML Server'
+    },
+    {
+      id: 'SRV-008',
+      name: 'docs-prod-01',
+      hostname: 'docs-prod-01.company.com',
+      ip: '10.1.6.11',
+      environment: 'prod',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '8 vCPU',
+      memory: '16GB',
+      status: 'active',
+      purpose: 'Document Management Server'
+    },
+    // UAT Environment
+    {
+      id: 'SRV-009',
+      name: 'web-uat-01',
+      hostname: 'web-uat-01.company.com',
+      ip: '10.2.1.11',
+      environment: 'uat',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '4 vCPU',
+      memory: '8GB',
+      status: 'active',
+      purpose: 'UAT Web Server'
+    },
+    {
+      id: 'SRV-010',
+      name: 'api-uat-01',
+      hostname: 'api-uat-01.company.com',
+      ip: '10.2.2.11',
+      environment: 'uat',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '8 vCPU',
+      memory: '16GB',
+      status: 'active',
+      purpose: 'UAT API Server'
+    },
+    // SIT Environment
+    {
+      id: 'SRV-011',
+      name: 'web-sit-01',
+      hostname: 'web-sit-01.company.com',
+      ip: '10.3.1.11',
+      environment: 'sit',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '4 vCPU',
+      memory: '8GB',
+      status: 'active',
+      purpose: 'SIT Web Server'
+    },
+    {
+      id: 'SRV-012',
+      name: 'api-sit-01',
+      hostname: 'api-sit-01.company.com',
+      ip: '10.3.2.11',
+      environment: 'sit',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '8 vCPU',
+      memory: '16GB',
+      status: 'active',
+      purpose: 'SIT API Server'
+    },
+    // Dev Environment
+    {
+      id: 'SRV-013',
+      name: 'dev-all-in-one',
+      hostname: 'dev-all-in-one.company.com',
+      ip: '10.4.1.11',
+      environment: 'dev',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '8 vCPU',
+      memory: '16GB',
+      status: 'active',
+      purpose: 'Development All-in-One Server'
+    },
+    // NFT (Non-Functional Test) Environment
+    {
+      id: 'SRV-014',
+      name: 'nft-perf-01',
+      hostname: 'nft-perf-01.company.com',
+      ip: '10.5.1.11',
+      environment: 'nft',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '16 vCPU',
+      memory: '32GB',
+      status: 'active',
+      purpose: 'Performance Testing Server'
+    },
+    {
+      id: 'SRV-015',
+      name: 'nft-load-01',
+      hostname: 'nft-load-01.company.com',
+      ip: '10.5.2.11',
+      environment: 'nft',
+      os: 'Ubuntu 22.04 LTS',
+      region: 'us-east-1',
+      datacenter: 'DC1',
+      cpu: '8 vCPU',
+      memory: '16GB',
+      status: 'active',
+      purpose: 'Load Testing Server'
+    }
+  ];
+
   // Sample Components
   components = [
     // Customer Portal Components
@@ -578,7 +797,71 @@ function initializeDefaultData() {
     { from: 'CAP-008', to: 'DATA-123', type: 'READ' },        // Reads analytics data
     { from: 'CAP-008', to: 'DATA-789', type: 'READ' },        // Reads customer data
     { from: 'CAP-008', to: 'DATA-012', type: 'READ' },        // Reads application data
-    { from: 'CAP-008', to: 'DATA-456', type: 'READ' }         // Reads transaction data
+    { from: 'CAP-008', to: 'DATA-456', type: 'READ' },        // Reads transaction data
+
+    // Component Installations on Servers (INSTALLED_ON)
+    // Production deployments
+    { from: 'COMP-001', to: 'SRV-001', type: 'INSTALLED_ON' },  // Registration Form on web-prod-01
+    { from: 'COMP-001', to: 'SRV-002', type: 'INSTALLED_ON' },  // Registration Form on web-prod-02 (load balanced)
+    { from: 'COMP-002', to: 'SRV-001', type: 'INSTALLED_ON' },  // Status Dashboard on web-prod-01
+    { from: 'COMP-002', to: 'SRV-002', type: 'INSTALLED_ON' },  // Status Dashboard on web-prod-02 (load balanced)
+    { from: 'COMP-003', to: 'SRV-003', type: 'INSTALLED_ON' },  // Auth Service on api-prod-01
+    { from: 'COMP-003', to: 'SRV-004', type: 'INSTALLED_ON' },  // Auth Service on api-prod-02 (load balanced)
+    { from: 'COMP-004', to: 'SRV-003', type: 'INSTALLED_ON' },  // App Validator on api-prod-01
+    { from: 'COMP-004', to: 'SRV-004', type: 'INSTALLED_ON' },  // App Validator on api-prod-02 (load balanced)
+    { from: 'COMP-005', to: 'SRV-007', type: 'INSTALLED_ON' },  // Fraud Detector on fraud-prod-01
+    { from: 'COMP-006', to: 'SRV-003', type: 'INSTALLED_ON' },  // Customer Lookup on api-prod-01
+    { from: 'COMP-006', to: 'SRV-004', type: 'INSTALLED_ON' },  // Customer Lookup on api-prod-02 (load balanced)
+    { from: 'COMP-007', to: 'SRV-008', type: 'INSTALLED_ON' },  // Doc Upload Handler on docs-prod-01
+    { from: 'COMP-008', to: 'SRV-008', type: 'INSTALLED_ON' },  // Doc Retrieval Service on docs-prod-01
+
+    // UAT deployments
+    { from: 'COMP-001', to: 'SRV-009', type: 'INSTALLED_ON' },  // Registration Form on web-uat-01
+    { from: 'COMP-002', to: 'SRV-009', type: 'INSTALLED_ON' },  // Status Dashboard on web-uat-01
+    { from: 'COMP-003', to: 'SRV-010', type: 'INSTALLED_ON' },  // Auth Service on api-uat-01
+    { from: 'COMP-004', to: 'SRV-010', type: 'INSTALLED_ON' },  // App Validator on api-uat-01
+
+    // SIT deployments
+    { from: 'COMP-001', to: 'SRV-011', type: 'INSTALLED_ON' },  // Registration Form on web-sit-01
+    { from: 'COMP-002', to: 'SRV-011', type: 'INSTALLED_ON' },  // Status Dashboard on web-sit-01
+    { from: 'COMP-003', to: 'SRV-012', type: 'INSTALLED_ON' },  // Auth Service on api-sit-01
+
+    // Dev deployments (all-in-one)
+    { from: 'COMP-001', to: 'SRV-013', type: 'INSTALLED_ON' },  // Registration Form on dev-all-in-one
+    { from: 'COMP-002', to: 'SRV-013', type: 'INSTALLED_ON' },  // Status Dashboard on dev-all-in-one
+    { from: 'COMP-003', to: 'SRV-013', type: 'INSTALLED_ON' },  // Auth Service on dev-all-in-one
+    { from: 'COMP-004', to: 'SRV-013', type: 'INSTALLED_ON' },  // App Validator on dev-all-in-one
+
+    // NFT deployments
+    { from: 'COMP-001', to: 'SRV-014', type: 'INSTALLED_ON' },  // Registration Form on nft-perf-01
+    { from: 'COMP-003', to: 'SRV-014', type: 'INSTALLED_ON' },  // Auth Service on nft-perf-01
+
+    // Server-to-Server Relationships
+    // Load Balancing relationships (production)
+    { from: 'SRV-001', to: 'SRV-002', type: 'LOAD_BALANCES_WITH' },  // Web servers load balance
+    { from: 'SRV-002', to: 'SRV-001', type: 'LOAD_BALANCES_WITH' },
+    { from: 'SRV-003', to: 'SRV-004', type: 'LOAD_BALANCES_WITH' },  // API servers load balance
+    { from: 'SRV-004', to: 'SRV-003', type: 'LOAD_BALANCES_WITH' },
+
+    // Work-together relationships (production architecture)
+    { from: 'SRV-001', to: 'SRV-003', type: 'WORKS_WITH' },  // Web server works with API server
+    { from: 'SRV-002', to: 'SRV-003', type: 'WORKS_WITH' },  // Web server works with API server
+    { from: 'SRV-001', to: 'SRV-004', type: 'WORKS_WITH' },  // Web server works with API server
+    { from: 'SRV-002', to: 'SRV-004', type: 'WORKS_WITH' },  // Web server works with API server
+    { from: 'SRV-003', to: 'SRV-005', type: 'WORKS_WITH' },  // API server works with database
+    { from: 'SRV-004', to: 'SRV-005', type: 'WORKS_WITH' },  // API server works with database
+    { from: 'SRV-003', to: 'SRV-006', type: 'WORKS_WITH' },  // API server works with cache
+    { from: 'SRV-004', to: 'SRV-006', type: 'WORKS_WITH' },  // API server works with cache
+    { from: 'SRV-003', to: 'SRV-007', type: 'WORKS_WITH' },  // API server works with fraud detection
+    { from: 'SRV-004', to: 'SRV-007', type: 'WORKS_WITH' },  // API server works with fraud detection
+    { from: 'SRV-003', to: 'SRV-008', type: 'WORKS_WITH' },  // API server works with document service
+    { from: 'SRV-004', to: 'SRV-008', type: 'WORKS_WITH' },  // API server works with document service
+
+    // UAT environment work-together
+    { from: 'SRV-009', to: 'SRV-010', type: 'WORKS_WITH' },  // UAT web works with UAT API
+
+    // SIT environment work-together
+    { from: 'SRV-011', to: 'SRV-012', type: 'WORKS_WITH' }   // SIT web works with SIT API
   ];
 }
 
@@ -684,6 +967,42 @@ app.post('/components', (req, res) => {
   };
   components.push(newComponent);
   res.status(201).json({ data: newComponent });
+});
+
+// Servers
+app.get('/servers', (req, res) => {
+  const { environment, datacenter, status } = req.query;
+  let filtered = servers;
+
+  if (environment) {
+    filtered = filtered.filter(s => s.environment === environment);
+  }
+  if (datacenter) {
+    filtered = filtered.filter(s => s.datacenter === datacenter);
+  }
+  if (status) {
+    filtered = filtered.filter(s => s.status === status);
+  }
+
+  res.json({ data: filtered, count: filtered.length });
+});
+
+app.get('/servers/:id', (req, res) => {
+  const server = servers.find(s => s.id === req.params.id);
+  if (server) {
+    res.json({ data: server });
+  } else {
+    res.status(404).json({ error: 'Server not found' });
+  }
+});
+
+app.post('/servers', (req, res) => {
+  const newServer = {
+    id: `SRV-${uuidv4().substring(0, 8)}`,
+    ...req.body
+  };
+  servers.push(newServer);
+  res.status(201).json({ data: newServer });
 });
 
 // Requirements

@@ -259,6 +259,45 @@ async function performSync() {
       console.log(`[${jobId}] Synced ${componentsData.data?.length || 0} components`);
       totalEntities += componentsData.data?.length || 0;
 
+      // 6. Sync Servers
+      console.log(`[${jobId}] Syncing servers...`);
+      const { data: serversData } = await axios.get(`${LEANIX_API_URL}/servers`);
+      for (const srv of serversData.data || []) {
+        await session.run(
+          `
+          MERGE (s:Server {id: $id})
+          SET s.name = $name,
+              s.hostname = $hostname,
+              s.ip = $ip,
+              s.environment = $environment,
+              s.os = $os,
+              s.region = $region,
+              s.datacenter = $datacenter,
+              s.cpu = $cpu,
+              s.memory = $memory,
+              s.status = $status,
+              s.purpose = $purpose,
+              s.lastSyncedAt = datetime()
+          `,
+          {
+            id: srv.id,
+            name: srv.name,
+            hostname: srv.hostname || '',
+            ip: srv.ip || '',
+            environment: srv.environment || 'unknown',
+            os: srv.os || '',
+            region: srv.region || '',
+            datacenter: srv.datacenter || '',
+            cpu: srv.cpu || '',
+            memory: srv.memory || '',
+            status: srv.status || 'unknown',
+            purpose: srv.purpose || '',
+          }
+        );
+      }
+      console.log(`[${jobId}] Synced ${serversData.data?.length || 0} servers`);
+      totalEntities += serversData.data?.length || 0;
+
       // Fetch and sync relationships
       console.log(`[${jobId}] Fetching relationships from LeanIX...`);
       const { data: relationshipsData } = await axios.get(`${LEANIX_API_URL}/relationships`);
