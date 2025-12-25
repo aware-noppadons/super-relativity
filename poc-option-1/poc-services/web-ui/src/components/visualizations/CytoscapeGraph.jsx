@@ -236,19 +236,21 @@ function CytoscapeGraph() {
       const node = evt.target;
       const nodeId = node.id();
 
-      // Get all descendants
-      const descendants = cy.elements().successors(`#${nodeId}`);
+      // Get all descendants (nodes and edges)
+      const descendants = node.successors();
 
       if (node.data('collapsed')) {
-        // Expand
+        // Expand - show descendants
         descendants.removeClass('hidden');
         node.data('collapsed', false);
-        node.style('border-width', '3');
+        node.removeStyle('background-color');
       } else {
-        // Collapse
+        // Collapse - hide descendants
         descendants.addClass('hidden');
         node.data('collapsed', true);
-        node.style('border-width', '5');
+        // Darken the node to show it's collapsed
+        const currentBg = node.style('background-color');
+        node.style('background-color', '#555');
       }
     });
 

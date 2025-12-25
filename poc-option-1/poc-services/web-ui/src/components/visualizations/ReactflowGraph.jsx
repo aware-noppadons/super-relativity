@@ -272,48 +272,66 @@ function ReactflowGraph() {
 
     setCollapsedNodes(newCollapsedNodes);
 
-    // Update node collapsed state
-    setNodes((nds) =>
-      nds.map((n) => {
+    // Get all descendants to hide/show
+    const getDescendants = (parentId, currentNodes) => {
+      const descendants = [];
+      const queue = [parentId];
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+        const children = currentNodes.filter(n => n.data.parentId === current);
+        children.forEach(child => {
+          descendants.push(child.id);
+          queue.push(child.id);
+        });
+      }
+
+      return descendants;
+    };
+
+    const shouldHide = !isCurrentlyCollapsed;
+
+    setNodes((nds) => {
+      const descendants = getDescendants(nodeId, nds);
+
+      return nds.map((n) => {
         if (n.id === nodeId) {
           return {
             ...n,
-            data: { ...n.data, collapsed: !isCurrentlyCollapsed },
+            data: { ...n.data, collapsed: shouldHide },
           };
         }
+        if (descendants.includes(n.id)) {
+          return { ...n, hidden: shouldHide };
+        }
         return n;
-      })
-    );
+      });
+    });
 
-    // Hide/show child nodes and their descendants
-    const hideDescendants = (parentId, shouldHide) => {
-      setNodes((nds) =>
-        nds.map((n) => {
-          if (n.data.parentId === parentId) {
-            if (shouldHide) {
-              hideDescendants(n.id, true);
-            }
-            return { ...n, hidden: shouldHide };
-          }
-          return n;
-        })
-      );
+    setEdges((eds) => {
+      setNodes((nds) => {
+        const descendants = getDescendants(nodeId, nds);
+        const affectedNodes = [nodeId, ...descendants];
 
-      setEdges((eds) =>
-        eds.map((e) => {
-          const sourceNode = nodes.find((n) => n.id === e.source);
-          const targetNode = nodes.find((n) => n.id === e.target);
+        // Update edges - hide edges connected to hidden nodes
+        const updatedEdges = eds.map((e) => {
+          const isAffected = descendants.includes(e.target) ||
+                            descendants.includes(e.source) ||
+                            (e.source === nodeId && shouldHide);
 
-          if (sourceNode?.data.parentId === parentId || targetNode?.data.parentId === parentId || e.source === parentId) {
+          if (isAffected) {
             return { ...e, hidden: shouldHide };
           }
           return e;
-        })
-      );
-    };
+        });
 
-    hideDescendants(nodeId, !isCurrentlyCollapsed);
-  }, [collapsedNodes, nodes, setNodes, setEdges]);
+        setEdges(updatedEdges);
+        return nds;
+      });
+
+      return eds;
+    });
+  }, [collapsedNodes, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
     (event, node) => {

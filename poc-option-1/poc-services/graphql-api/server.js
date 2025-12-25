@@ -88,6 +88,27 @@ const schema = buildSchema(`
     completedAt: String
   }
 
+  type GraphNode {
+    id: String!
+    label: String!
+    nodeType: String!
+    level: Int!
+    properties: String
+  }
+
+  type GraphEdge {
+    id: String!
+    source: String!
+    target: String!
+    label: String!
+    relationshipType: String!
+  }
+
+  type HierarchicalGraph {
+    nodes: [GraphNode]!
+    edges: [GraphEdge]!
+  }
+
   type Query {
     # Applications
     applications: [Application]
@@ -108,6 +129,9 @@ const schema = buildSchema(`
     # Graph queries
     findRelatedApplications(applicationId: ID!, depth: Int): [Application]
     searchApplications(query: String!): [Application]
+
+    # Hierarchical graph visualization
+    hierarchicalGraph(rootName: String!, rootType: String!): HierarchicalGraph
   }
 
   type Mutation {
@@ -270,6 +294,155 @@ const root = {
       `, { query });
 
       return result.records.map(record => record.get('a').properties);
+    } finally {
+      await session.close();
+    }
+  },
+
+  // Hierarchical graph visualization
+  hierarchicalGraph: async ({ rootName, rootType }) => {
+    const session = neo4jDriver.session();
+    try {
+      // Query to get hierarchical structure similar to the Cypher example
+      // BusinessCapability -> DataObject -> Component/BusinessCapability -> Server
+      const result = await session.run(`
+        MATCH (root {name: $rootName})
+        WHERE $rootType IN labels(root)
+
+        // Get DataObjects connected to root
+        OPTIONAL MATCH (root)-[r1]-(do:DataObject)
+
+        // Get Components and BusinessCapabilities connected to DataObjects
+        OPTIONAL MATCH (do)-[r2]-(dep)
+        WHERE dep:Component OR dep:BusinessCapability
+
+        // Get Servers connected to Components
+        OPTIONAL MATCH (dep)-[r3]-(srv:Server)
+
+        RETURN root,
+               collect(DISTINCT {node: do, rel: r1, level: 1}) as dataObjects,
+               collect(DISTINCT {node: dep, rel: r2, level: 2}) as dependants,
+               collect(DISTINCT {node: srv, rel: r3, level: 3}) as servers
+      `, { rootName, rootType });
+
+      if (result.records.length === 0) {
+        return { nodes: [], edges: [] };
+      }
+
+      const nodes = [];
+      const edges = [];
+      const nodeIds = new Set();
+
+      const record = result.records[0];
+      const root = record.get('root');
+
+      // Add root node (level 0)
+      if (root) {
+        const rootId = root.identity.toString();
+        nodes.push({
+          id: rootId,
+          label: root.properties.name,
+          nodeType: root.labels[0],
+          level: 0,
+          properties: JSON.stringify(root.properties),
+        });
+        nodeIds.add(rootId);
+      }
+
+      // Process DataObjects (level 1)
+      const dataObjects = record.get('dataObjects');
+      dataObjects.forEach(item => {
+        if (item.node) {
+          const nodeId = item.node.identity.toString();
+          if (!nodeIds.has(nodeId)) {
+            nodes.push({
+              id: nodeId,
+              label: item.node.properties.name || 'Unknown',
+              nodeType: item.node.labels[0],
+              level: 1,
+              properties: JSON.stringify(item.node.properties),
+            });
+            nodeIds.add(nodeId);
+          }
+
+          // Add edge
+          if (item.rel) {
+            const sourceId = item.rel.start.toString();
+            const targetId = item.rel.end.toString();
+            edges.push({
+              id: item.rel.identity.toString(),
+              source: sourceId,
+              target: targetId,
+              label: item.rel.type,
+              relationshipType: item.rel.type,
+            });
+          }
+        }
+      });
+
+      // Process dependants (level 2)
+      const dependants = record.get('dependants');
+      dependants.forEach(item => {
+        if (item.node) {
+          const nodeId = item.node.identity.toString();
+          if (!nodeIds.has(nodeId)) {
+            nodes.push({
+              id: nodeId,
+              label: item.node.properties.name || 'Unknown',
+              nodeType: item.node.labels[0],
+              level: 2,
+              properties: JSON.stringify(item.node.properties),
+            });
+            nodeIds.add(nodeId);
+          }
+
+          // Add edge
+          if (item.rel) {
+            const sourceId = item.rel.start.toString();
+            const targetId = item.rel.end.toString();
+            edges.push({
+              id: item.rel.identity.toString(),
+              source: sourceId,
+              target: targetId,
+              label: item.rel.type,
+              relationshipType: item.rel.type,
+            });
+          }
+        }
+      });
+
+      // Process servers (level 3)
+      const servers = record.get('servers');
+      servers.forEach(item => {
+        if (item.node) {
+          const nodeId = item.node.identity.toString();
+          if (!nodeIds.has(nodeId)) {
+            nodes.push({
+              id: nodeId,
+              label: item.node.properties.name || 'Unknown',
+              nodeType: item.node.labels[0],
+              level: 3,
+              properties: JSON.stringify(item.node.properties),
+            });
+            nodeIds.add(nodeId);
+          }
+
+          // Add edge
+          if (item.rel) {
+            const sourceId = item.rel.start.toString();
+            const targetId = item.rel.end.toString();
+            edges.push({
+              id: item.rel.identity.toString(),
+              source: sourceId,
+              target: targetId,
+              label: item.rel.type,
+              relationshipType: item.rel.type,
+            });
+          }
+        }
+      });
+
+      return { nodes, edges };
     } finally {
       await session.close();
     }

@@ -74,6 +74,48 @@ function GraphComparison() {
         </p>
       </div>
 
+      {/* Live Graph Visualization Call-to-Action */}
+      <div style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '30px',
+        borderRadius: '12px',
+        marginBottom: '40px',
+        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontSize: '24px', color: 'white', marginBottom: '10px', fontWeight: 'bold' }}>
+            🚀 Live Graph Visualization
+          </h2>
+          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.95)', lineHeight: '1.6', margin: 0 }}>
+            Query real Neo4j data and visualize hierarchical relationships dynamically.
+            Enter any root node and see the complete dependency graph.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/graph/live')}
+          style={{
+            padding: '14px 28px',
+            background: 'white',
+            color: '#667eea',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            marginLeft: '20px',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          Try Live Graph →
+        </button>
+      </div>
+
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',

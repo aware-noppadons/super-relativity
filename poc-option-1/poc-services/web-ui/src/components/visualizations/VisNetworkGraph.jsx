@@ -109,6 +109,15 @@ function VisNetworkGraph() {
   const collapsedNodes = useRef(new Set());
 
   useEffect(() => {
+    // Suppress ResizeObserver errors (benign vis-network issue)
+    const resizeObserverErr = window.console.error;
+    window.console.error = (...args) => {
+      if (args[0]?.includes?.('ResizeObserver')) {
+        return;
+      }
+      resizeObserverErr(...args);
+    };
+
     if (!containerRef.current) return;
 
     const { nodes, edges } = createSampleData();
@@ -304,7 +313,11 @@ function VisNetworkGraph() {
     });
 
     return () => {
-      network.destroy();
+      if (network) {
+        network.destroy();
+      }
+      // Restore original console.error
+      window.console.error = resizeObserverErr;
     };
   }, []);
 

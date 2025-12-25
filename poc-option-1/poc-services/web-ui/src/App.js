@@ -8,6 +8,7 @@ import GraphComparison from './pages/GraphComparison';
 import ReactflowPage from './pages/ReactflowPage';
 import CytoscapePage from './pages/CytoscapePage';
 import VisNetworkPage from './pages/VisNetworkPage';
+import LiveGraphPage from './pages/LiveGraphPage';
 
 // Apollo Client setup
 const client = new ApolloClient({
@@ -202,6 +203,7 @@ function App() {
           <Route path="/graph/reactflow" element={<ReactflowPage />} />
           <Route path="/graph/cytoscape" element={<CytoscapePage />} />
           <Route path="/graph/visnetwork" element={<VisNetworkPage />} />
+          <Route path="/graph/live" element={<LiveGraphPage />} />
         </Routes>
       </Router>
     </ApolloProvider>
