@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Network } from 'vis-network';
+import { Network, DataSet } from 'vis-network';
 import 'vis-network/styles/vis-network.css';
 
 function createSampleData() {
@@ -133,11 +133,20 @@ function VisNetworkGraph() {
 
     if (!containerRef.current) return;
 
-    const { nodes, edges } = createSampleData();
+    let network = null;
+    let nodes = null;
+    let edges = null;
 
-    const data = { nodes, edges };
+    try {
+      const { nodes: nodeArray, edges: edgeArray } = createSampleData();
 
-    const options = {
+      // Create DataSets for dynamic updates
+      nodes = new DataSet(nodeArray);
+      edges = new DataSet(edgeArray);
+
+      const data = { nodes, edges };
+
+      const options = {
       layout: {
         hierarchical: {
           direction: 'LR',
@@ -264,66 +273,78 @@ function VisNetworkGraph() {
       },
     };
 
-    const network = new Network(containerRef.current, data, options);
-    networkRef.current = network;
+      network = new Network(containerRef.current, data, options);
+      networkRef.current = network;
 
     // Collapse/expand functionality on double-click
     network.on('doubleClick', function(params) {
-      if (params.nodes.length > 0) {
-        const nodeId = params.nodes[0];
-        const isCollapsed = collapsedNodes.current.has(nodeId);
+      try {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const isCollapsed = collapsedNodes.current.has(nodeId);
 
-        // Get connected nodes
-        const connectedNodes = network.getConnectedNodes(nodeId, 'to');
+          // Get connected nodes
+          const connectedNodes = network.getConnectedNodes(nodeId, 'to');
 
-        if (isCollapsed) {
-          // Expand - show connected nodes
-          collapsedNodes.current.delete(nodeId);
-          connectedNodes.forEach(id => {
-            nodes.update({ id, hidden: false });
-          });
-        } else {
-          // Collapse - hide connected nodes and their descendants
-          collapsedNodes.current.add(nodeId);
-
-          const hideDescendants = (parentId) => {
-            const children = network.getConnectedNodes(parentId, 'to');
-            children.forEach(childId => {
-              nodes.update({ id: childId, hidden: true });
-              hideDescendants(childId);
+          if (isCollapsed) {
+            // Expand - show connected nodes
+            collapsedNodes.current.delete(nodeId);
+            connectedNodes.forEach(id => {
+              nodes.update({ id, hidden: false });
             });
-          };
+          } else {
+            // Collapse - hide connected nodes and their descendants
+            collapsedNodes.current.add(nodeId);
 
-          hideDescendants(nodeId);
+            const hideDescendants = (parentId) => {
+              const children = network.getConnectedNodes(parentId, 'to');
+              children.forEach(childId => {
+                nodes.update({ id: childId, hidden: true });
+                hideDescendants(childId);
+              });
+            };
+
+            hideDescendants(nodeId);
+          }
         }
-
-        // Update the network
-        network.setData(data);
+      } catch (error) {
+        console.error('Error in doubleClick handler:', error);
       }
     });
 
     // Single click to highlight path
     network.on('click', function(params) {
-      if (params.nodes.length > 0) {
-        const nodeId = params.nodes[0];
+      try {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
 
-        // Highlight all connected edges
-        const connectedEdges = network.getConnectedEdges(nodeId);
+          // Highlight all connected edges
+          const connectedEdges = network.getConnectedEdges(nodeId);
 
-        edges.forEach(edge => {
-          if (connectedEdges.includes(edge.id)) {
-            edges.update({ id: edge.id, width: 4, color: { color: '#FFD700' } });
-          } else {
+          // Get all edge IDs and update them
+          const allEdges = edges.get();
+          allEdges.forEach(edge => {
+            if (connectedEdges.includes(edge.id)) {
+              edges.update({ id: edge.id, width: 4, color: { color: '#FFD700' } });
+            } else {
+              edges.update({ id: edge.id, width: 2, color: { color: '#999' } });
+            }
+          });
+        } else {
+          // Reset all edges
+          const allEdges = edges.get();
+          allEdges.forEach(edge => {
             edges.update({ id: edge.id, width: 2, color: { color: '#999' } });
-          }
-        });
-      } else {
-        // Reset all edges
-        edges.forEach(edge => {
-          edges.update({ id: edge.id, width: 2, color: { color: '#999' } });
-        });
+          });
+        }
+      } catch (error) {
+        console.error('Error in click handler:', error);
       }
     });
+
+    } catch (error) {
+      console.error('Error initializing vis-network:', error);
+    }
 
     return () => {
       if (network) {
