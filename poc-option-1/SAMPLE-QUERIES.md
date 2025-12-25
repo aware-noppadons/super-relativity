@@ -1094,6 +1094,326 @@ query GetDataLineage {
 }
 ```
 
+### 12.4 Graph Traversal - Business Capability Network
+
+GraphQL equivalent to Cypher's variable-length path traversal for exploring connected nodes:
+
+```graphql
+query GetCapabilityNetwork {
+  businessCapability(name: "Payment Processing") {
+    name
+    criticality
+
+    # Direct relationships (1 hop)
+    implementedBy {
+      name
+      type
+    }
+
+    # Enabled components (1 hop)
+    enabledBy {
+      name
+      technology
+
+      # Component's application (2 hops)
+      application {
+        name
+        businessValue
+      }
+
+      # Where components are deployed (2 hops)
+      installedOn {
+        name
+        environment
+        ip
+
+        # Load balanced servers (3 hops)
+        loadBalancesWith {
+          name
+          environment
+        }
+
+        # Connected servers (3 hops)
+        worksWith {
+          name
+          purpose
+        }
+      }
+
+      # Data accessed by components (2 hops)
+      modifies {
+        name
+        sensitivity
+        type
+      }
+      reads {
+        name
+        sensitivity
+        type
+      }
+    }
+
+    # Data operations (1 hop)
+    creates {
+      name
+      sensitivity
+      application
+    }
+    readsData {
+      name
+      sensitivity
+      application
+    }
+    updates {
+      name
+      sensitivity
+      application
+    }
+    deactivates {
+      name
+      sensitivity
+      application
+    }
+
+    # Requirements (1 hop)
+    supportedBy {
+      name
+      priority
+      status
+
+      # Components implementing requirements (2 hops)
+      implementedBy {
+        name
+        technology
+      }
+    }
+  }
+}
+```
+
+**Use Case:** Complete network exploration around a business capability (equivalent to Cypher's `[*1..3]` traversal)
+
+**Note:** GraphQL uses explicit relationship traversal instead of variable-length paths. Adjust depth by adding/removing nested levels.
+
+### 12.5 Graph Traversal - Application Deployment View
+
+```graphql
+query GetApplicationDeployment {
+  application(name: "Payment Service") {
+    name
+    type
+    businessValue
+
+    # Components (1 hop)
+    components {
+      name
+      technology
+
+      # Server deployments (2 hops)
+      installedOn {
+        name
+        hostname
+        ip
+        environment
+        datacenter
+        cpu
+        memory
+        status
+
+        # Server relationships (3 hops)
+        loadBalancesWith {
+          name
+          environment
+        }
+        worksWith {
+          name
+          environment
+          purpose
+        }
+      }
+
+      # Data access (2 hops)
+      modifies {
+        name
+        type
+        database
+        sensitivity
+      }
+      reads {
+        name
+        type
+        database
+        sensitivity
+      }
+    }
+
+    # Capabilities (1 hop)
+    implementsCapability {
+      name
+      criticality
+      maturity
+
+      # Capability requirements (2 hops)
+      supportedBy {
+        name
+        priority
+        status
+      }
+    }
+  }
+}
+```
+
+**Use Case:** Complete deployment and dependency view (equivalent to filtered Cypher traversal on deployment relationships)
+
+### 12.6 Graph Traversal - Server Infrastructure Impact
+
+```graphql
+query GetServerImpact {
+  server(name: "api-prod-01") {
+    name
+    hostname
+    ip
+    environment
+    datacenter
+    status
+
+    # Components on this server (1 hop)
+    hosts {
+      name
+      type
+      technology
+
+      # Applications affected (2 hops)
+      application {
+        name
+        businessValue
+
+        # Capabilities impacted (3 hops)
+        implementsCapability {
+          name
+          criticality
+        }
+      }
+
+      # Data accessed (2 hops)
+      modifies {
+        name
+        sensitivity
+      }
+      reads {
+        name
+        sensitivity
+      }
+    }
+
+    # Load balanced servers (1 hop)
+    loadBalancesWith {
+      name
+      environment
+      status
+    }
+
+    # Connected servers (1 hop)
+    worksWith {
+      name
+      environment
+      purpose
+    }
+  }
+}
+```
+
+**Use Case:** Failure impact analysis - what stops working if this server fails (equivalent to Cypher bidirectional traversal)
+
+### 12.7 Graph Traversal - Data Lineage Network
+
+```graphql
+query GetDataLineageNetwork {
+  dataObject(name: "PaymentTransactionTable") {
+    name
+    type
+    database
+    sensitivity
+    application
+
+    # Components that modify (1 hop)
+    modifiedBy {
+      name
+      technology
+
+      # Applications (2 hops)
+      application {
+        name
+        businessValue
+      }
+
+      # Deployments (2 hops)
+      installedOn {
+        name
+        environment
+        datacenter
+      }
+    }
+
+    # Components that read (1 hop)
+    readBy {
+      name
+      technology
+
+      # Applications (2 hops)
+      application {
+        name
+        businessValue
+      }
+
+      # Deployments (2 hops)
+      installedOn {
+        name
+        environment
+        datacenter
+      }
+    }
+
+    # Business operations (1 hop)
+    createdBy {
+      name
+      criticality
+    }
+    readByCapability {
+      name
+      criticality
+    }
+    updatedBy {
+      name
+      criticality
+    }
+    deactivatedBy {
+      name
+      criticality
+    }
+  }
+}
+```
+
+**Use Case:** Complete data access audit trail (equivalent to Cypher data lineage traversal)
+
+### 12.8 GraphQL vs Cypher Traversal Comparison
+
+| Feature | Cypher | GraphQL |
+|---------|--------|---------|
+| **Variable-length paths** | `[*1..5]` | Explicit nested queries |
+| **Depth control** | Single parameter | Add/remove nesting levels |
+| **Performance** | Optimized graph traversal | N+1 query potential |
+| **Flexibility** | Any path pattern | Predefined schema |
+| **Bidirectional** | Easy with `<-` and `->` | Requires schema support |
+| **Dynamic traversal** | Yes (runtime patterns) | No (compile-time schema) |
+| **Best for** | Ad-hoc exploration | Structured data fetching |
+
+**Recommendation:**
+- Use **Cypher** for exploratory analysis, complex path finding, and variable-depth traversal
+- Use **GraphQL** for structured queries with known depth and relationships
+
 ---
 
 ## Summary

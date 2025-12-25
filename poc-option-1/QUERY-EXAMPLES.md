@@ -19,6 +19,7 @@ This manual provides copy-paste ready queries you can run immediately in Neo4j B
 9. [Impact Analysis](#impact-analysis)
 10. [Production Operations](#production-operations)
 11. [Advanced Queries](#advanced-queries) - Graph traversal, connectivity analysis, dependency mapping
+12. [GraphQL Traversal Queries](#graphql-traversal-queries) - GraphQL equivalents for graph traversal
 
 ---
 
@@ -715,6 +716,274 @@ ORDER BY Hops, NodeType, Name
 **Use Case:** Trace deployment path from application to servers
 
 **Tip:** Replace relationship types to focus on specific paths (e.g., data flow, capability implementation)
+
+---
+
+## GraphQL Traversal Queries
+
+GraphQL provides an alternative approach to graph traversal using nested queries instead of Cypher's variable-length paths. These queries assume a GraphQL endpoint is available.
+
+### 41. Business Capability Network (GraphQL)
+
+```graphql
+query GetCapabilityNetwork {
+  businessCapability(name: "Payment Processing") {
+    name
+    criticality
+
+    # Components (1 hop)
+    enabledBy {
+      name
+      technology
+
+      # Applications (2 hops)
+      application {
+        name
+        businessValue
+      }
+
+      # Deployments (2 hops)
+      installedOn {
+        name
+        environment
+        ip
+
+        # Load balanced servers (3 hops)
+        loadBalancesWith {
+          name
+          environment
+        }
+      }
+
+      # Data access (2 hops)
+      modifies {
+        name
+        sensitivity
+      }
+      reads {
+        name
+        sensitivity
+      }
+    }
+
+    # Data operations (1 hop)
+    creates {
+      name
+      sensitivity
+    }
+    readsData {
+      name
+      sensitivity
+    }
+  }
+}
+```
+
+**Use Case:** Explore complete network around a business capability
+
+**Cypher Equivalent:** Query 36 (Find All Connected Nodes)
+
+### 42. Application Deployment View (GraphQL)
+
+```graphql
+query GetApplicationDeployment {
+  application(name: "Payment Service") {
+    name
+    type
+    businessValue
+
+    # Components (1 hop)
+    components {
+      name
+      technology
+
+      # Server deployments (2 hops)
+      installedOn {
+        name
+        hostname
+        ip
+        environment
+        datacenter
+        cpu
+        memory
+        status
+
+        # Load balancing (3 hops)
+        loadBalancesWith {
+          name
+          environment
+        }
+        worksWith {
+          name
+          purpose
+        }
+      }
+
+      # Data access (2 hops)
+      modifies {
+        name
+        type
+        sensitivity
+      }
+      reads {
+        name
+        type
+        sensitivity
+      }
+    }
+
+    # Capabilities (1 hop)
+    implementsCapability {
+      name
+      criticality
+    }
+  }
+}
+```
+
+**Use Case:** Complete deployment view from application to infrastructure
+
+**Cypher Equivalent:** Query 40 (Filtered Traversal - Deployment Path)
+
+### 43. Server Failure Impact (GraphQL)
+
+```graphql
+query GetServerImpact {
+  server(name: "api-prod-01") {
+    name
+    environment
+    status
+
+    # Components on server (1 hop)
+    hosts {
+      name
+      technology
+
+      # Applications affected (2 hops)
+      application {
+        name
+        businessValue
+
+        # Capabilities impacted (3 hops)
+        implementsCapability {
+          name
+          criticality
+        }
+      }
+
+      # Data at risk (2 hops)
+      modifies {
+        name
+        sensitivity
+      }
+    }
+
+    # Related servers (1 hop)
+    loadBalancesWith {
+      name
+      environment
+    }
+    worksWith {
+      name
+      purpose
+    }
+  }
+}
+```
+
+**Use Case:** Assess blast radius of server failure
+
+**Cypher Equivalent:** Query 28 (Server Failure Impact Analysis)
+
+### 44. Data Lineage Network (GraphQL)
+
+```graphql
+query GetDataLineage {
+  dataObject(name: "PaymentTransactionTable") {
+    name
+    type
+    database
+    sensitivity
+    application
+
+    # Write access (1 hop)
+    modifiedBy {
+      name
+      technology
+
+      # Applications (2 hops)
+      application {
+        name
+        businessValue
+      }
+
+      # Deployments (2 hops)
+      installedOn {
+        name
+        environment
+        datacenter
+      }
+    }
+
+    # Read access (1 hop)
+    readBy {
+      name
+      technology
+
+      # Applications (2 hops)
+      application {
+        name
+        businessValue
+      }
+    }
+
+    # Business operations (1 hop)
+    createdBy {
+      name
+      criticality
+    }
+    readByCapability {
+      name
+      criticality
+    }
+    updatedBy {
+      name
+      criticality
+    }
+  }
+}
+```
+
+**Use Case:** Complete data access audit trail
+
+**Cypher Equivalent:** Query 18 (Data Lineage Analysis)
+
+### 45. GraphQL vs Cypher Quick Comparison
+
+**GraphQL Advantages:**
+- ✅ Type-safe queries
+- ✅ Fetch exactly what you need
+- ✅ Single endpoint for all data
+- ✅ Great for client applications
+
+**Cypher Advantages:**
+- ✅ Variable-length paths `[*1..5]`
+- ✅ Ad-hoc pattern matching
+- ✅ Complex graph algorithms
+- ✅ Better for exploration
+
+**When to Use Each:**
+
+| Scenario | Use |
+|----------|-----|
+| Building a UI dashboard | GraphQL |
+| Exploratory data analysis | Cypher |
+| Known query patterns | GraphQL |
+| Unknown relationship depth | Cypher |
+| Client applications | GraphQL |
+| Database admin tasks | Cypher |
+
+**Tip:** Use both! GraphQL for structured UI queries, Cypher for analysis and reporting.
 
 ---
 
