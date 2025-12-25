@@ -18,6 +18,7 @@ This manual provides copy-paste ready queries you can run immediately in Neo4j B
 8. [Compliance and Security](#compliance-and-security)
 9. [Impact Analysis](#impact-analysis)
 10. [Production Operations](#production-operations)
+11. [Advanced Queries](#advanced-queries) - Graph traversal, connectivity analysis, dependency mapping
 
 ---
 
@@ -626,6 +627,94 @@ ORDER BY ServerCount DESC
 ```
 
 **Use Case:** Infrastructure cost optimization
+
+### 36. Find All Connected Nodes (Graph Traversal)
+
+```cypher
+// Find all nodes connected to Payment Processing capability
+MATCH (b:BusinessCapability {name: "Payment Processing"})-[*1..5]-(connected)
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       connected.name as Name,
+       connected.id as ID
+ORDER BY NodeType, Name
+```
+
+**Use Case:** Discover all entities related to a business capability
+
+**Tip:** Adjust `[*1..5]` to control traversal depth (1-5 hops)
+
+### 37. Visual Subgraph Explorer
+
+```cypher
+// Get visual subgraph for Neo4j Browser visualization
+MATCH path = (b:BusinessCapability {name: "Payment Processing"})-[*1..5]-(connected)
+RETURN path
+LIMIT 200
+```
+
+**Use Case:** Visual exploration of relationship networks in Neo4j Browser
+
+**Tip:** Adjust LIMIT to control visualization complexity
+
+### 38. Connection Analysis by Distance
+
+```cypher
+// Group connected nodes by how many hops away they are
+MATCH path = (b:BusinessCapability {name: "Payment Processing"})-[*1..5]-(connected)
+WITH DISTINCT connected, length(path) as distance, labels(connected)[0] as nodeType
+RETURN nodeType as NodeType,
+       distance as Hops,
+       collect(connected.name) as Nodes,
+       count(connected) as Count
+ORDER BY Hops, NodeType
+```
+
+**Use Case:** Understand layers of connectivity (direct vs indirect relationships)
+
+### 39. Bidirectional Dependency Analysis
+
+```cypher
+// Separate what depends on this capability vs what it depends on
+MATCH (b:BusinessCapability {name: "Payment Processing"})
+
+// What this capability depends on (outgoing)
+OPTIONAL MATCH outPath = (b)-[outRel*1..3]->(out)
+WITH b, collect(DISTINCT {
+  type: labels(out)[0],
+  name: out.name,
+  relationships: [r in relationships(outPath) | type(r)]
+}) as dependencies
+
+// What depends on this capability (incoming)
+OPTIONAL MATCH inPath = (b)<-[inRel*1..3]-(in)
+WITH b, dependencies, collect(DISTINCT {
+  type: labels(in)[0],
+  name: in.name,
+  relationships: [r in relationships(inPath) | type(r)]
+}) as dependents
+
+RETURN b.name as Capability,
+       dependencies as DependsOn,
+       dependents as DependedOnBy
+```
+
+**Use Case:** Complete dependency mapping for impact analysis
+
+### 40. Filtered Traversal (Deployment Path Only)
+
+```cypher
+// Follow only deployment-related relationships
+MATCH path = (app:Application {name: "Payment Service"})
+             -[:HAS_COMPONENT|INSTALLED_ON*1..3]-(connected)
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       connected.name as Name,
+       length(path) as Hops
+ORDER BY Hops, NodeType, Name
+```
+
+**Use Case:** Trace deployment path from application to servers
+
+**Tip:** Replace relationship types to focus on specific paths (e.g., data flow, capability implementation)
 
 ---
 

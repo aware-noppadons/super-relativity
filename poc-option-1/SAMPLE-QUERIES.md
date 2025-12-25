@@ -766,11 +766,209 @@ ORDER BY ComponentCount DESC
 
 ---
 
-## 10. Mock LeanIX API Query Examples
+## 10. Graph Traversal and Connectivity Queries
+
+Graph traversal queries allow you to explore all nodes and relationships connected to a specific starting point, either directly or through multiple hops. These queries are essential for understanding dependencies, impact analysis, and relationship mapping.
+
+### 10.1 Simple Traversal - Find All Connected Nodes
+
+Find all nodes connected to a BusinessCapability within 5 hops, grouped by type:
+
+```cypher
+// Find all nodes connected to Payment Processing
+MATCH (b:BusinessCapability {name: "Payment Processing"})-[*1..5]-(connected)
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       connected.name as Name,
+       connected.id as ID
+ORDER BY NodeType, Name
+```
+
+**Use Case:** Quick overview of all entities related to a specific business capability
+
+**Adjust traversal depth:**
+- `[*1..3]` - Up to 3 hops (closer relationships)
+- `[*1..5]` - Up to 5 hops (broader scope)
+- `[*]` - Unlimited hops (use with caution on large graphs)
+
+### 10.2 Visual Subgraph Exploration
+
+Return graph paths for visualization in Neo4j Browser:
+
+```cypher
+// Get visual subgraph centered on Payment Processing
+MATCH path = (b:BusinessCapability {name: "Payment Processing"})-[*1..5]-(connected)
+RETURN path
+LIMIT 200
+```
+
+**Use Case:** Visual exploration in Neo4j Browser to understand the network of relationships
+
+**Tip:** Adjust LIMIT based on graph size to prevent overwhelming the visualization
+
+### 10.3 Detailed Path Analysis
+
+Show the exact path taken to reach each connected node:
+
+```cypher
+// Analyze paths from Payment Processing to all connected nodes
+MATCH path = (b:BusinessCapability {name: "Payment Processing"})-[*1..5]-(connected)
+WITH path, relationships(path) as rels, nodes(path) as pathNodes
+RETURN
+  b.name as StartNode,
+  [rel in rels | type(rel)] as Relationships,
+  [node in pathNodes | labels(node)[0] + ':' + coalesce(node.name, node.id)] as PathNodes,
+  length(path) as PathLength
+ORDER BY PathLength, PathNodes
+LIMIT 50
+```
+
+**Use Case:** Understanding how nodes are connected and the relationship chain
+
+**Example Output:**
+```
+StartNode: "Payment Processing"
+Relationships: ["ENABLED_BY", "HAS_COMPONENT", "INSTALLED_ON"]
+PathNodes: ["BusinessCapability:Payment Processing", "Component:Payment Gateway", "Server:api-prod-01"]
+PathLength: 3
+```
+
+### 10.4 Connected Nodes by Type and Distance
+
+Group connected nodes by their type and distance (number of hops):
+
+```cypher
+// Analyze connection patterns by node type and distance
+MATCH path = (b:BusinessCapability {name: "Payment Processing"})-[*1..5]-(connected)
+WITH DISTINCT connected, length(path) as distance, labels(connected)[0] as nodeType
+RETURN
+  nodeType as NodeType,
+  distance as Hops,
+  collect(connected.name) as Nodes,
+  count(connected) as Count
+ORDER BY Hops, NodeType
+```
+
+**Use Case:** Understanding the layers of connectivity and which types of nodes are directly vs indirectly connected
+
+**Example Output:**
+```
+NodeType: "Component", Hops: 1, Nodes: ["Payment Gateway", "Card Validator"], Count: 2
+NodeType: "Application", Hops: 2, Nodes: ["Payment Service", "Core Banking"], Count: 2
+NodeType: "Server", Hops: 3, Nodes: ["api-prod-01", "api-prod-02"], Count: 2
+```
+
+### 10.5 Bidirectional Traversal with Relationship Direction
+
+Separate outgoing and incoming relationships for directional analysis:
+
+```cypher
+// Analyze incoming and outgoing relationships separately
+MATCH (b:BusinessCapability {name: "Payment Processing"})
+
+// Outgoing relationships
+OPTIONAL MATCH outPath = (b)-[outRel*1..3]->(out)
+WITH b, collect(DISTINCT {
+  type: labels(out)[0],
+  name: out.name,
+  relationships: [r in relationships(outPath) | type(r)],
+  direction: 'outgoing'
+}) as outgoing
+
+// Incoming relationships
+OPTIONAL MATCH inPath = (b)<-[inRel*1..3]-(in)
+WITH b, outgoing, collect(DISTINCT {
+  type: labels(in)[0],
+  name: in.name,
+  relationships: [r in relationships(inPath) | type(r)],
+  direction: 'incoming'
+}) as incoming
+
+RETURN
+  b.name as Capability,
+  outgoing,
+  incoming
+```
+
+**Use Case:** Understanding which nodes depend on this capability (incoming) vs which nodes this capability depends on (outgoing)
+
+**Example Analysis:**
+- **Outgoing:** Shows what this capability creates/reads/updates (data dependencies)
+- **Incoming:** Shows what implements/supports this capability (implementation chain)
+
+### 10.6 Traversal from Any Node Type
+
+These patterns work from any starting node type. Examples:
+
+**From Application:**
+```cypher
+// Find all nodes connected to an application
+MATCH (app:Application {name: "Payment Service"})-[*1..5]-(connected)
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       count(connected) as Count
+ORDER BY NodeType
+```
+
+**From Server:**
+```cypher
+// Find all nodes connected to a production server
+MATCH (srv:Server {name: "api-prod-01"})-[*1..5]-(connected)
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       connected.name as Name
+ORDER BY NodeType, Name
+```
+
+**From DataObject:**
+```cypher
+// Find all nodes related to sensitive data
+MATCH (data:DataObject {sensitivity: "PII"})-[*1..5]-(connected)
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       count(connected) as Count,
+       collect(DISTINCT connected.name)[0..5] as SampleNodes
+ORDER BY Count DESC
+```
+
+### 10.7 Filtered Traversal by Relationship Type
+
+Traverse only specific relationship types:
+
+```cypher
+// Follow only deployment and component relationships
+MATCH path = (app:Application {name: "Payment Service"})
+             -[:HAS_COMPONENT|INSTALLED_ON*1..3]-(connected)
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       connected.name as Name
+ORDER BY NodeType, Name
+```
+
+**Use Case:** Focus on specific relationship chains (e.g., deployment path, data flow, capability implementation)
+
+### 10.8 Traversal Performance Tips
+
+**For Large Graphs:**
+1. **Limit traversal depth:** Use `[*1..3]` instead of `[*1..5]`
+2. **Filter early:** Add WHERE clauses to reduce initial matches
+3. **Use LIMIT:** Prevent overwhelming results
+4. **Specify relationship types:** Use `[:SPECIFIC_TYPE*1..3]` instead of `[*1..3]`
+
+**Example Optimized Query:**
+```cypher
+// Optimized traversal with filtering
+MATCH (b:BusinessCapability {name: "Payment Processing"})
+      -[:ENABLED_BY|HAS_COMPONENT|INSTALLED_ON*1..3]-(connected)
+WHERE labels(connected)[0] IN ['Component', 'Server', 'Application']
+RETURN DISTINCT labels(connected)[0] as NodeType,
+       connected.name as Name
+ORDER BY NodeType, Name
+LIMIT 100
+```
+
+---
+
+## 11. Mock LeanIX API Query Examples
 
 The mock LeanIX API provides REST endpoints to query the source data:
 
-### 10.1 Query Applications
+### 11.1 Query Applications
 ```bash
 # Get all applications
 curl http://localhost:8080/applications
@@ -782,7 +980,7 @@ curl http://localhost:8080/applications/APP-123
 curl http://localhost:8080/applications | jq '.count'
 ```
 
-### 10.2 Query Business Capabilities
+### 11.2 Query Business Capabilities
 ```bash
 # Get all business capabilities
 curl http://localhost:8080/capabilities
@@ -791,7 +989,7 @@ curl http://localhost:8080/capabilities
 curl http://localhost:8080/capabilities/CAP-001
 ```
 
-### 10.3 Query Components
+### 11.3 Query Components
 ```bash
 # Get all components
 curl http://localhost:8080/components
@@ -803,7 +1001,7 @@ curl http://localhost:8080/components?application=APP-123
 curl http://localhost:8080/components/COMP-001
 ```
 
-### 10.4 Query Data Objects
+### 11.4 Query Data Objects
 ```bash
 # Get all data objects
 curl http://localhost:8080/data-objects
@@ -812,7 +1010,7 @@ curl http://localhost:8080/data-objects
 curl http://localhost:8080/data-objects/DATA-789
 ```
 
-### 10.5 Query Servers
+### 11.5 Query Servers
 ```bash
 # Get all servers
 curl http://localhost:8080/servers
@@ -830,7 +1028,7 @@ curl http://localhost:8080/servers/SRV-001
 curl http://localhost:8080/servers?environment=prod | jq '.count'
 ```
 
-### 10.6 Query Relationships
+### 11.6 Query Relationships
 ```bash
 # Get all relationships
 curl http://localhost:8080/relationships
@@ -841,11 +1039,11 @@ curl http://localhost:8080/sync/all
 
 ---
 
-## 11. GraphQL API Query Examples
+## 12. GraphQL API Query Examples
 
 The GraphQL API provides a unified query interface:
 
-### 11.1 Query Application with Components
+### 12.1 Query Application with Components
 ```graphql
 query GetApplicationDetails {
   application(name: "Customer Portal") {
@@ -860,7 +1058,7 @@ query GetApplicationDetails {
 }
 ```
 
-### 11.2 Query Capability Lineage
+### 12.2 Query Capability Lineage
 ```graphql
 query GetCapabilityLineage {
   businessCapability(name: "Customer Onboarding") {
@@ -877,7 +1075,7 @@ query GetCapabilityLineage {
 }
 ```
 
-### 11.3 Query Data Lineage
+### 12.3 Query Data Lineage
 ```graphql
 query GetDataLineage {
   dataObject(name: "CustomerTable") {
