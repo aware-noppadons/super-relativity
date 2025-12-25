@@ -8,6 +8,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Position,
+  Handle,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -44,12 +45,14 @@ const BusinessCapabilityNode = ({ data }) => (
     textAlign: 'center',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
   }}>
+    <Handle type="target" position={Position.Left} />
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
       {data.label}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       BusinessCapability
     </div>
+    <Handle type="source" position={Position.Right} />
   </div>
 );
 
@@ -64,12 +67,14 @@ const DataObjectNode = ({ data }) => (
     textAlign: 'center',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
   }}>
+    <Handle type="target" position={Position.Left} />
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
       {data.label}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       DataObject
     </div>
+    <Handle type="source" position={Position.Right} />
   </div>
 );
 
@@ -84,12 +89,14 @@ const ComponentNode = ({ data }) => (
     textAlign: 'center',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
   }}>
+    <Handle type="target" position={Position.Left} />
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
       {data.label}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       Component
     </div>
+    <Handle type="source" position={Position.Right} />
   </div>
 );
 
@@ -104,12 +111,14 @@ const ServerNode = ({ data }) => (
     textAlign: 'center',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
   }}>
+    <Handle type="target" position={Position.Left} />
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
       {data.label}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       Server
     </div>
+    <Handle type="source" position={Position.Right} />
   </div>
 );
 
