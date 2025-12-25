@@ -175,6 +175,9 @@ LIMIT 100`,
   applicationProcessing: `MATCH path = (bc:BusinessCapability {name: 'Application Processing'})-[*1..2]-(related)
 RETURN path
 LIMIT 50`,
+  applicationRequirements: `MATCH (app:Application)-[r:SATISFIES]->(req:Requirement)-[r2:SUPPORTS]->(cap:BusinessCapability)
+RETURN app, r, req, r2, cap
+LIMIT 50`,
   dataObjectFlow: `MATCH path = (do:DataObject)-[*1..2]-(related)
 RETURN path
 LIMIT 50`,
@@ -311,10 +314,25 @@ function LiveGraphVisualization() {
               </button>
               <button
                 type="button"
-                onClick={() => loadExample('dataObjectFlow')}
+                onClick={() => loadExample('applicationRequirements')}
                 style={{
                   padding: '5px 12px',
                   background: '#9C27B0',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                App Requirements
+              </button>
+              <button
+                type="button"
+                onClick={() => loadExample('dataObjectFlow')}
+                style={{
+                  padding: '5px 12px',
+                  background: '#E91E63',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
