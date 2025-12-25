@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from '@apollo/client';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
+
+// Import pages
+import GraphComparison from './pages/GraphComparison';
+import ReactflowPage from './pages/ReactflowPage';
+import CytoscapePage from './pages/CytoscapePage';
+import VisNetworkPage from './pages/VisNetworkPage';
 
 // Apollo Client setup
 const client = new ApolloClient({
@@ -76,6 +83,11 @@ function Dashboard() {
         >
           Sync Jobs
         </button>
+        <Link to="/graph" style={{ textDecoration: 'none' }}>
+          <button className={activeTab === 'graph' ? 'active' : ''}>
+            Graph Visualization
+          </button>
+        </Link>
       </nav>
 
       <main className="content">
@@ -183,7 +195,15 @@ function Dashboard() {
 function App() {
   return (
     <ApolloProvider client={client}>
-      <Dashboard />
+      <Router>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/graph" element={<GraphComparison />} />
+          <Route path="/graph/reactflow" element={<ReactflowPage />} />
+          <Route path="/graph/cytoscape" element={<CytoscapePage />} />
+          <Route path="/graph/visnetwork" element={<VisNetworkPage />} />
+        </Routes>
+      </Router>
     </ApolloProvider>
   );
 }
