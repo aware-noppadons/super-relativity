@@ -112,10 +112,23 @@ function VisNetworkGraph() {
     // Suppress ResizeObserver errors (benign vis-network issue)
     const resizeObserverErr = window.console.error;
     window.console.error = (...args) => {
-      if (args[0]?.includes?.('ResizeObserver')) {
+      const msg = args[0]?.toString?.() || '';
+      if (msg.includes('ResizeObserver')) {
         return;
       }
       resizeObserverErr(...args);
+    };
+
+    // Also suppress the actual ResizeObserver error at the window level
+    const originalOnError = window.onerror;
+    window.onerror = (message, source, lineno, colno, error) => {
+      if (message && message.toString().includes('ResizeObserver')) {
+        return true; // Suppress the error
+      }
+      if (originalOnError) {
+        return originalOnError(message, source, lineno, colno, error);
+      }
+      return false;
     };
 
     if (!containerRef.current) return;
@@ -316,8 +329,9 @@ function VisNetworkGraph() {
       if (network) {
         network.destroy();
       }
-      // Restore original console.error
+      // Restore original console.error and window.onerror
       window.console.error = resizeObserverErr;
+      window.onerror = originalOnError;
     };
   }, []);
 

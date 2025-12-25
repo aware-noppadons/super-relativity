@@ -168,7 +168,11 @@ function createSampleData() {
       label: 'CREATE/READ',
       type: 'smoothstep',
       animated: false,
-      style: { stroke: '#999', strokeWidth: 2 },
+      style: { stroke: '#666', strokeWidth: 2 },
+      markerEnd: {
+        type: 'arrowclosed',
+        color: '#666',
+      },
     });
   });
 
@@ -206,7 +210,11 @@ function createSampleData() {
       target: comp.id,
       label: comp.isCap ? 'SUPPORTS' : 'MODIFIES',
       type: 'smoothstep',
-      style: { stroke: '#999', strokeWidth: 2 },
+      style: { stroke: '#666', strokeWidth: 2 },
+      markerEnd: {
+        type: 'arrowclosed',
+        color: '#666',
+      },
     });
   });
 
@@ -242,7 +250,11 @@ function createSampleData() {
       target: srv.id,
       label: 'INSTALLED_ON',
       type: 'smoothstep',
-      style: { stroke: '#999', strokeWidth: 2 },
+      style: { stroke: '#666', strokeWidth: 2 },
+      markerEnd: {
+        type: 'arrowclosed',
+        color: '#666',
+      },
     });
   });
 
@@ -261,60 +273,59 @@ function ReactflowGraph() {
   }, [setNodes, setEdges]);
 
   const toggleNodeCollapse = useCallback((nodeId) => {
-    const newCollapsedNodes = new Set(collapsedNodes);
-    const isCurrentlyCollapsed = collapsedNodes.has(nodeId);
+    setCollapsedNodes((prevCollapsed) => {
+      const newCollapsedNodes = new Set(prevCollapsed);
+      const isCurrentlyCollapsed = prevCollapsed.has(nodeId);
 
-    if (isCurrentlyCollapsed) {
-      newCollapsedNodes.delete(nodeId);
-    } else {
-      newCollapsedNodes.add(nodeId);
-    }
-
-    setCollapsedNodes(newCollapsedNodes);
-
-    // Get all descendants to hide/show
-    const getDescendants = (parentId, currentNodes) => {
-      const descendants = [];
-      const queue = [parentId];
-
-      while (queue.length > 0) {
-        const current = queue.shift();
-        const children = currentNodes.filter(n => n.data.parentId === current);
-        children.forEach(child => {
-          descendants.push(child.id);
-          queue.push(child.id);
-        });
+      if (isCurrentlyCollapsed) {
+        newCollapsedNodes.delete(nodeId);
+      } else {
+        newCollapsedNodes.add(nodeId);
       }
 
-      return descendants;
-    };
+      const shouldHide = !isCurrentlyCollapsed;
 
-    const shouldHide = !isCurrentlyCollapsed;
+      // Get all descendants to hide/show
+      const getDescendants = (parentId, currentNodes) => {
+        const descendants = [];
+        const queue = [parentId];
 
-    setNodes((nds) => {
-      const descendants = getDescendants(nodeId, nds);
-
-      return nds.map((n) => {
-        if (n.id === nodeId) {
-          return {
-            ...n,
-            data: { ...n.data, collapsed: shouldHide },
-          };
+        while (queue.length > 0) {
+          const current = queue.shift();
+          const children = currentNodes.filter(n => n.data.parentId === current);
+          children.forEach(child => {
+            descendants.push(child.id);
+            queue.push(child.id);
+          });
         }
-        if (descendants.includes(n.id)) {
-          return { ...n, hidden: shouldHide };
-        }
-        return n;
-      });
-    });
 
-    setEdges((eds) => {
+        return descendants;
+      };
+
+      // Update nodes
       setNodes((nds) => {
         const descendants = getDescendants(nodeId, nds);
-        const affectedNodes = [nodeId, ...descendants];
 
-        // Update edges - hide edges connected to hidden nodes
-        const updatedEdges = eds.map((e) => {
+        return nds.map((n) => {
+          if (n.id === nodeId) {
+            return {
+              ...n,
+              data: { ...n.data, collapsed: shouldHide },
+            };
+          }
+          if (descendants.includes(n.id)) {
+            return { ...n, hidden: shouldHide };
+          }
+          return n;
+        });
+      });
+
+      // Update edges
+      setEdges((eds) => {
+        const currentNodes = nodes;
+        const descendants = getDescendants(nodeId, currentNodes);
+
+        return eds.map((e) => {
           const isAffected = descendants.includes(e.target) ||
                             descendants.includes(e.source) ||
                             (e.source === nodeId && shouldHide);
@@ -324,14 +335,11 @@ function ReactflowGraph() {
           }
           return e;
         });
-
-        setEdges(updatedEdges);
-        return nds;
       });
 
-      return eds;
+      return newCollapsedNodes;
     });
-  }, [collapsedNodes, setNodes, setEdges]);
+  }, [nodes, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
     (event, node) => {
@@ -351,6 +359,15 @@ function ReactflowGraph() {
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          animated: false,
+          style: { stroke: '#666', strokeWidth: 2 },
+          markerEnd: {
+            type: 'arrowclosed',
+            color: '#666',
+          },
+        }}
         fitView
         attributionPosition="bottom-right"
       >
