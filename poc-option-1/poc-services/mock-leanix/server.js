@@ -682,6 +682,11 @@ function initializeDefaultData() {
     { from: 'REQ-003', to: 'COMP-007', type: 'IMPLEMENTED_BY' },  // Document upload by Upload Handler
     { from: 'REQ-003', to: 'COMP-008', type: 'IMPLEMENTED_BY' },  // Document retrieval by Retrieval Service
 
+    // Applications Satisfy Requirements
+    { from: 'APP-123', to: 'REQ-001', type: 'SATISFIES' },  // Customer Portal satisfies self-service submission
+    { from: 'APP-123', to: 'REQ-002', type: 'SATISFIES' },  // Customer Portal satisfies real-time status tracking
+    { from: 'APP-789', to: 'REQ-003', type: 'SATISFIES' },  // Doc Management Service satisfies secure document storage
+
     // Applications Implement Business Capabilities
     { from: 'APP-123', to: 'CAP-001', type: 'IMPLEMENTS_CAPABILITY' },  // Customer Portal implements Customer Onboarding
     { from: 'APP-123', to: 'CAP-004', type: 'IMPLEMENTS_CAPABILITY' },  // Customer Portal implements Customer Service & Support
