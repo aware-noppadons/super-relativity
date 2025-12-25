@@ -12,9 +12,9 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-const GET_HIERARCHICAL_GRAPH = gql`
-  query GetHierarchicalGraph($rootName: String!, $rootType: String!) {
-    hierarchicalGraph(rootName: $rootName, rootType: $rootType) {
+const GET_CUSTOM_CYPHER_GRAPH = gql`
+  query GetCustomCypherGraph($cypherQuery: String!) {
+    customCypherGraph(cypherQuery: $cypherQuery) {
       nodes {
         id
         label
@@ -164,24 +164,48 @@ function transformGraphQLToReactflow(graphData) {
   return { nodes, edges };
 }
 
+// Example Cypher queries
+const EXAMPLE_QUERIES = {
+  paymentProcessing: `MATCH path = (bc:BusinessCapability {name: 'Payment Processing'})-[*1..3]-(related)
+RETURN path
+LIMIT 50`,
+  allBusinessCapabilities: `MATCH (bc:BusinessCapability)-[r]-(related)
+RETURN bc, r, related
+LIMIT 100`,
+  applicationProcessing: `MATCH path = (bc:BusinessCapability {name: 'Application Processing'})-[*1..2]-(related)
+RETURN path
+LIMIT 50`,
+  dataObjectFlow: `MATCH path = (do:DataObject)-[*1..2]-(related)
+RETURN path
+LIMIT 50`,
+  serverDependencies: `MATCH (s:Server)-[r]-(c:Component)
+RETURN s, r, c
+LIMIT 100`,
+};
+
 function LiveGraphVisualization() {
   const navigate = useNavigate();
-  const [rootName, setRootName] = useState('Payment Processing');
-  const [rootType, setRootType] = useState('BusinessCapability');
-  const [queryVars, setQueryVars] = useState({ rootName: 'Payment Processing', rootType: 'BusinessCapability' });
+  const [cypherQuery, setCypherQuery] = useState(EXAMPLE_QUERIES.paymentProcessing);
+  const [queryVars, setQueryVars] = useState({ cypherQuery: EXAMPLE_QUERIES.paymentProcessing });
 
-  const { loading, error, data } = useQuery(GET_HIERARCHICAL_GRAPH, {
+  const { loading, error, data } = useQuery(GET_CUSTOM_CYPHER_GRAPH, {
     variables: queryVars,
     fetchPolicy: 'network-only',
   });
 
   const handleQuery = (e) => {
     e.preventDefault();
-    setQueryVars({ rootName, rootType });
+    setQueryVars({ cypherQuery });
   };
 
-  const { nodes, edges } = data?.hierarchicalGraph
-    ? transformGraphQLToReactflow(data.hierarchicalGraph)
+  const loadExample = (exampleName) => {
+    const query = EXAMPLE_QUERIES[exampleName];
+    setCypherQuery(query);
+    setQueryVars({ cypherQuery: query });
+  };
+
+  const { nodes, edges } = data?.customCypherGraph
+    ? transformGraphQLToReactflow(data.customCypherGraph)
     : { nodes: [], edges: [] };
 
   const [displayNodes, setNodes, onNodesChange] = useNodesState(nodes);
@@ -228,67 +252,131 @@ function LiveGraphVisualization() {
         </div>
       </div>
 
-      {/* Query Form */}
+      {/* Cypher Query Form */}
       <div style={{
         padding: '15px 30px',
         background: '#f5f5f5',
         borderBottom: '1px solid #ddd',
       }}>
-        <form onSubmit={handleQuery} style={{ display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>
-              Root Node Name:
+        <form onSubmit={handleQuery} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label style={{ fontSize: '12px', fontWeight: 'bold' }}>
+              Custom Cypher Query:
             </label>
-            <input
-              type="text"
-              value={rootName}
-              onChange={(e) => setRootName(e.target.value)}
-              placeholder="e.g., Payment Processing"
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => loadExample('paymentProcessing')}
+                style={{
+                  padding: '5px 12px',
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                Payment Processing
+              </button>
+              <button
+                type="button"
+                onClick={() => loadExample('applicationProcessing')}
+                style={{
+                  padding: '5px 12px',
+                  background: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                Application Processing
+              </button>
+              <button
+                type="button"
+                onClick={() => loadExample('allBusinessCapabilities')}
+                style={{
+                  padding: '5px 12px',
+                  background: '#FF9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                All Capabilities
+              </button>
+              <button
+                type="button"
+                onClick={() => loadExample('dataObjectFlow')}
+                style={{
+                  padding: '5px 12px',
+                  background: '#9C27B0',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                DataObject Flow
+              </button>
+              <button
+                type="button"
+                onClick={() => loadExample('serverDependencies')}
+                style={{
+                  padding: '5px 12px',
+                  background: '#607D8B',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                }}
+              >
+                Server Dependencies
+              </button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <textarea
+              value={cypherQuery}
+              onChange={(e) => setCypherQuery(e.target.value)}
+              placeholder="Enter your Cypher query here..."
+              rows={4}
               style={{
-                width: '100%',
-                padding: '8px 12px',
-                fontSize: '14px',
+                flex: 1,
+                padding: '10px',
+                fontSize: '13px',
+                fontFamily: 'monospace',
                 border: '1px solid #ddd',
                 borderRadius: '4px',
+                resize: 'vertical',
               }}
             />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>
-              Root Node Type:
-            </label>
-            <select
-              value={rootType}
-              onChange={(e) => setRootType(e.target.value)}
+            <button
+              type="submit"
               style={{
-                width: '100%',
-                padding: '8px 12px',
-                fontSize: '14px',
-                border: '1px solid #ddd',
+                padding: '12px 24px',
+                background: '#673AB7',
+                color: 'white',
+                border: 'none',
                 borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
               }}
             >
-              <option value="BusinessCapability">BusinessCapability</option>
-              <option value="Application">Application</option>
-              <option value="Component">Component</option>
-              <option value="DataObject">DataObject</option>
-            </select>
+              Execute Query
+            </button>
           </div>
-          <button
-            type="submit"
-            style={{
-              padding: '8px 24px',
-              background: '#673AB7',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-            }}
-          >
-            Query
-          </button>
+          <div style={{ fontSize: '11px', color: '#666' }}>
+            💡 Tip: Use MATCH, RETURN, and LIMIT to control your query. Click example buttons above to load sample queries.
+          </div>
         </form>
       </div>
 
@@ -330,11 +418,17 @@ function LiveGraphVisualization() {
             left: '50%',
             transform: 'translate(-50%, -50%)',
             textAlign: 'center',
+            maxWidth: '500px',
           }}>
-            <div style={{ fontSize: '18px', color: '#666' }}>No data found for "{queryVars.rootName}"</div>
+            <div style={{ fontSize: '18px', color: '#666', marginBottom: '10px' }}>No data found</div>
             <div style={{ fontSize: '14px', color: '#999', marginTop: '10px' }}>
-              Try a different node name or type
+              Your query returned no results. Try:
             </div>
+            <ul style={{ fontSize: '13px', color: '#777', textAlign: 'left', marginTop: '10px' }}>
+              <li>Clicking one of the example query buttons above</li>
+              <li>Using MATCH to find nodes, and RETURN to specify what to display</li>
+              <li>Adding LIMIT to control the number of results</li>
+            </ul>
           </div>
         )}
 
@@ -380,7 +474,7 @@ function LiveGraphVisualization() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <div>
-            <strong>Note:</strong> This visualization queries real Neo4j data via GraphQL. Results are hierarchical: Root → DataObjects → Components/BusinessCapabilities → Servers
+            <strong>Note:</strong> This visualization executes custom Cypher queries against real Neo4j data via GraphQL. Write any Cypher query or use the example buttons to get started.
           </div>
           <div>
             <strong>Nodes:</strong> {displayNodes.length} | <strong>Edges:</strong> {displayEdges.length}

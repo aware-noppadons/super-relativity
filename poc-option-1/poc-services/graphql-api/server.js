@@ -132,6 +132,9 @@ const schema = buildSchema(`
 
     # Hierarchical graph visualization
     hierarchicalGraph(rootName: String!, rootType: String!): HierarchicalGraph
+
+    # Custom Cypher query for graph visualization
+    customCypherGraph(cypherQuery: String!): HierarchicalGraph
   }
 
   type Mutation {
@@ -443,6 +446,144 @@ const root = {
       });
 
       return { nodes, edges };
+    } finally {
+      await session.close();
+    }
+  },
+
+  // Custom Cypher query for graph visualization
+  customCypherGraph: async ({ cypherQuery }) => {
+    const session = neo4jDriver.session();
+    try {
+      // Execute the custom Cypher query
+      const result = await session.run(cypherQuery);
+
+      const nodes = [];
+      const edges = [];
+      const nodeIds = new Set();
+      const edgeIds = new Set();
+
+      // Process all records
+      result.records.forEach(record => {
+        // Extract all nodes and relationships from the record
+        record.keys.forEach(key => {
+          const value = record.get(key);
+
+          // Handle Node objects
+          if (value && value.labels && value.identity) {
+            const nodeId = value.identity.toString();
+            if (!nodeIds.has(nodeId)) {
+              nodes.push({
+                id: nodeId,
+                label: value.properties.name || value.properties.label || `Node ${nodeId}`,
+                nodeType: value.labels[0] || 'Unknown',
+                level: 0, // Custom queries don't have hierarchy by default
+                properties: JSON.stringify(value.properties),
+              });
+              nodeIds.add(nodeId);
+            }
+          }
+
+          // Handle Relationship objects
+          if (value && value.type && value.start && value.end) {
+            const edgeId = value.identity.toString();
+            if (!edgeIds.has(edgeId)) {
+              edges.push({
+                id: edgeId,
+                source: value.start.toString(),
+                target: value.end.toString(),
+                label: value.type,
+                relationshipType: value.type,
+              });
+              edgeIds.add(edgeId);
+            }
+          }
+
+          // Handle Path objects
+          if (value && value.segments) {
+            value.segments.forEach(segment => {
+              // Add start node
+              const startId = segment.start.identity.toString();
+              if (!nodeIds.has(startId)) {
+                nodes.push({
+                  id: startId,
+                  label: segment.start.properties.name || segment.start.properties.label || `Node ${startId}`,
+                  nodeType: segment.start.labels[0] || 'Unknown',
+                  level: 0,
+                  properties: JSON.stringify(segment.start.properties),
+                });
+                nodeIds.add(startId);
+              }
+
+              // Add end node
+              const endId = segment.end.identity.toString();
+              if (!nodeIds.has(endId)) {
+                nodes.push({
+                  id: endId,
+                  label: segment.end.properties.name || segment.end.properties.label || `Node ${endId}`,
+                  nodeType: segment.end.labels[0] || 'Unknown',
+                  level: 0,
+                  properties: JSON.stringify(segment.end.properties),
+                });
+                nodeIds.add(endId);
+              }
+
+              // Add relationship
+              const relId = segment.relationship.identity.toString();
+              if (!edgeIds.has(relId)) {
+                edges.push({
+                  id: relId,
+                  source: segment.relationship.start.toString(),
+                  target: segment.relationship.end.toString(),
+                  label: segment.relationship.type,
+                  relationshipType: segment.relationship.type,
+                });
+                edgeIds.add(relId);
+              }
+            });
+          }
+
+          // Handle arrays
+          if (Array.isArray(value)) {
+            value.forEach(item => {
+              // Handle nodes in arrays
+              if (item && item.labels && item.identity) {
+                const nodeId = item.identity.toString();
+                if (!nodeIds.has(nodeId)) {
+                  nodes.push({
+                    id: nodeId,
+                    label: item.properties.name || item.properties.label || `Node ${nodeId}`,
+                    nodeType: item.labels[0] || 'Unknown',
+                    level: 0,
+                    properties: JSON.stringify(item.properties),
+                  });
+                  nodeIds.add(nodeId);
+                }
+              }
+
+              // Handle relationships in arrays
+              if (item && item.type && item.start && item.end) {
+                const edgeId = item.identity.toString();
+                if (!edgeIds.has(edgeId)) {
+                  edges.push({
+                    id: edgeId,
+                    source: item.start.toString(),
+                    target: item.end.toString(),
+                    label: item.type,
+                    relationshipType: item.type,
+                  });
+                  edgeIds.add(edgeId);
+                }
+              }
+            });
+          }
+        });
+      });
+
+      return { nodes, edges };
+    } catch (error) {
+      // Return error information in a user-friendly way
+      throw new Error(`Cypher query error: ${error.message}`);
     } finally {
       await session.close();
     }
