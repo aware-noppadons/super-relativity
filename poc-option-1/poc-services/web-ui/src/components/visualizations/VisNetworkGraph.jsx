@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Network, DataSet } from 'vis-network';
+import { Network } from 'vis-network';
+import { DataSet } from 'vis-data';
 import 'vis-network/styles/vis-network.css';
 
 function createSampleData() {
