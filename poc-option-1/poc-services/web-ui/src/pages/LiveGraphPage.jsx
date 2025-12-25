@@ -134,22 +134,86 @@ function transformGraphQLToReactflow(graphData) {
     return { nodes: [], edges: [] };
   }
 
-  const nodes = graphData.nodes.map((node, index) => ({
-    id: node.id,
-    type: node.nodeType,
-    data: {
-      label: node.label,
-      level: node.level,
-      nodeType: node.nodeType,
-      properties: node.properties,
-    },
-    position: {
-      x: node.level * 350,
-      y: index * 120,
-    },
-    sourcePosition: Position.Right,
-    targetPosition: Position.Left,
-  }));
+  // Calculate hierarchical levels using BFS from nodes with no incoming edges
+  const nodeMap = new Map(graphData.nodes.map(n => [n.id, { ...n, level: 0 }]));
+  const incomingEdges = new Map();
+  const outgoingEdges = new Map();
+
+  // Build adjacency lists
+  graphData.edges.forEach(edge => {
+    if (!incomingEdges.has(edge.target)) incomingEdges.set(edge.target, []);
+    if (!outgoingEdges.has(edge.source)) outgoingEdges.set(edge.source, []);
+    incomingEdges.get(edge.target).push(edge.source);
+    outgoingEdges.get(edge.source).push(edge.target);
+  });
+
+  // Find root nodes (no incoming edges)
+  const rootNodes = graphData.nodes
+    .filter(node => !incomingEdges.has(node.id) || incomingEdges.get(node.id).length === 0)
+    .map(node => node.id);
+
+  // If no root nodes, pick nodes with most outgoing edges
+  const startNodes = rootNodes.length > 0
+    ? rootNodes
+    : graphData.nodes
+        .sort((a, b) => (outgoingEdges.get(b.id)?.length || 0) - (outgoingEdges.get(a.id)?.length || 0))
+        .slice(0, 3)
+        .map(n => n.id);
+
+  // BFS to assign levels
+  const visited = new Set();
+  const queue = startNodes.map(id => ({ id, level: 0 }));
+
+  while (queue.length > 0) {
+    const { id, level } = queue.shift();
+
+    if (visited.has(id)) continue;
+    visited.add(id);
+
+    const node = nodeMap.get(id);
+    if (node) {
+      node.level = Math.max(node.level, level);
+    }
+
+    const children = outgoingEdges.get(id) || [];
+    children.forEach(childId => {
+      if (!visited.has(childId)) {
+        queue.push({ id: childId, level: level + 1 });
+      }
+    });
+  }
+
+  // Group nodes by level
+  const nodesByLevel = new Map();
+  nodeMap.forEach(node => {
+    if (!nodesByLevel.has(node.level)) {
+      nodesByLevel.set(node.level, []);
+    }
+    nodesByLevel.get(node.level).push(node);
+  });
+
+  // Position nodes
+  const nodes = [];
+  nodesByLevel.forEach((levelNodes, level) => {
+    levelNodes.forEach((node, indexInLevel) => {
+      nodes.push({
+        id: node.id,
+        type: node.nodeType,
+        data: {
+          label: node.label,
+          level: node.level,
+          nodeType: node.nodeType,
+          properties: node.properties,
+        },
+        position: {
+          x: level * 350,
+          y: indexInLevel * 120,
+        },
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+      });
+    });
+  });
 
   const edges = graphData.edges.map(edge => ({
     id: edge.id,
@@ -159,6 +223,10 @@ function transformGraphQLToReactflow(graphData) {
     type: 'smoothstep',
     animated: false,
     style: { stroke: '#999', strokeWidth: 2 },
+    markerEnd: {
+      type: 'arrowclosed',
+      color: '#999',
+    },
   }));
 
   return { nodes, edges };
