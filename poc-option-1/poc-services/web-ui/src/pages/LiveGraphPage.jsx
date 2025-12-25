@@ -87,7 +87,7 @@ const ComponentNode = ({ data }) => (
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
       {data.label}
     </div>
-    <div style={{ fontSize: '10px', opacity: 0.8', marginTop: '2px' }}>
+    <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       Component
     </div>
   </div>
@@ -107,7 +107,7 @@ const ServerNode = ({ data }) => (
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
       {data.label}
     </div>
-    <div style={{ fontSize: '10px', opacity: 0.8', marginTop: '2px' }}>
+    <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       Server
     </div>
   </div>
