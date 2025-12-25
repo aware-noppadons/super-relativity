@@ -207,19 +207,18 @@ function LiveGraphVisualization() {
     setQueryVars({ cypherQuery: query });
   };
 
-  const { nodes, edges } = data?.customCypherGraph
-    ? transformGraphQLToReactflow(data.customCypherGraph)
-    : { nodes: [], edges: [] };
-
-  const [displayNodes, setNodes, onNodesChange] = useNodesState(nodes);
-  const [displayEdges, setEdges, onEdgesChange] = useEdgesState(edges);
+  const [displayNodes, setNodes, onNodesChange] = useNodesState([]);
+  const [displayEdges, setEdges, onEdgesChange] = useEdgesState([]);
 
   React.useEffect(() => {
-    if (nodes.length > 0) {
-      setNodes(nodes);
-      setEdges(edges);
+    if (data?.customCypherGraph) {
+      const { nodes, edges } = transformGraphQLToReactflow(data.customCypherGraph);
+      if (nodes.length > 0) {
+        setNodes(nodes);
+        setEdges(edges);
+      }
     }
-  }, [nodes, edges, setNodes, setEdges]);
+  }, [data, setNodes, setEdges]);
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
