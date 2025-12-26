@@ -37,6 +37,38 @@ FOR (d:Diagram) REQUIRE d.id IS UNIQUE;
 CREATE CONSTRAINT capability_id IF NOT EXISTS
 FOR (c:BusinessCapability) REQUIRE c.id IS UNIQUE;
 
+// Components
+CREATE CONSTRAINT component_id IF NOT EXISTS
+FOR (c:Component) REQUIRE c.id IS UNIQUE;
+
+// Servers
+CREATE CONSTRAINT server_id IF NOT EXISTS
+FOR (s:Server) REQUIRE s.id IS UNIQUE;
+
+// Application Changes
+CREATE CONSTRAINT app_change_id IF NOT EXISTS
+FOR (ac:AppChange) REQUIRE ac.id IS UNIQUE;
+
+// Infrastructure Changes
+CREATE CONSTRAINT infra_change_id IF NOT EXISTS
+FOR (ic:InfraChange) REQUIRE ic.id IS UNIQUE;
+
+// Code Files
+CREATE CONSTRAINT code_file_path IF NOT EXISTS
+FOR (cf:CodeFile) REQUIRE cf.path IS UNIQUE;
+
+// Functions (composite constraint)
+CREATE CONSTRAINT function_composite IF NOT EXISTS
+FOR (f:Function) REQUIRE (f.name, f.filePath) IS UNIQUE;
+
+// Diagram Entities
+CREATE CONSTRAINT diagram_entity_id IF NOT EXISTS
+FOR (de:DiagramEntity) REQUIRE de.id IS UNIQUE;
+
+// Modules
+CREATE CONSTRAINT module_name IF NOT EXISTS
+FOR (m:Module) REQUIRE m.name IS UNIQUE;
+
 // ============================================================================
 // INDEXES - Improve query performance
 // ============================================================================
@@ -70,10 +102,120 @@ FOR (c:BusinessCapability) ON (c.criticality);
 CREATE INDEX capability_level IF NOT EXISTS
 FOR (c:BusinessCapability) ON (c.level);
 
-// Full-text search indexes
+// ============================================================================
+// TIER 1 CRITICAL INDEXES - High-frequency properties (40+ queries)
+// ============================================================================
+
+// Name indexes for missing node types
+CREATE INDEX component_name IF NOT EXISTS
+FOR (c:Component) ON (c.name);
+
+CREATE INDEX server_name IF NOT EXISTS
+FOR (s:Server) ON (s.name);
+
+CREATE INDEX app_change_name IF NOT EXISTS
+FOR (ac:AppChange) ON (ac.name);
+
+CREATE INDEX infra_change_name IF NOT EXISTS
+FOR (ic:InfraChange) ON (ic.name);
+
+CREATE INDEX infrastructure_name IF NOT EXISTS
+FOR (i:Infrastructure) ON (i.name);
+
+CREATE INDEX business_capability_name IF NOT EXISTS
+FOR (bc:BusinessCapability) ON (bc.name);
+
+// Compliance & Security (15+ queries)
+CREATE INDEX requirement_compliance IF NOT EXISTS
+FOR (r:Requirement) ON (r.compliance);
+
+// Environment & Deployment (20+ queries)
+CREATE INDEX server_environment IF NOT EXISTS
+FOR (s:Server) ON (s.environment);
+
+CREATE INDEX infrastructure_environment IF NOT EXISTS
+FOR (i:Infrastructure) ON (i.environment);
+
+CREATE INDEX infrastructure_criticality IF NOT EXISTS
+FOR (i:Infrastructure) ON (i.criticality);
+
+// ============================================================================
+// TIER 2 IMPORTANT INDEXES - Moderate-frequency properties (10+ queries)
+// ============================================================================
+
+// Change Management
+CREATE INDEX app_change_status IF NOT EXISTS
+FOR (ac:AppChange) ON (ac.status);
+
+CREATE INDEX app_change_priority IF NOT EXISTS
+FOR (ac:AppChange) ON (ac.priority);
+
+CREATE INDEX infra_change_status IF NOT EXISTS
+FOR (ic:InfraChange) ON (ic.status);
+
+CREATE INDEX infra_change_priority IF NOT EXISTS
+FOR (ic:InfraChange) ON (ic.priority);
+
+CREATE INDEX requirement_status IF NOT EXISTS
+FOR (r:Requirement) ON (r.status);
+
+// Technology & Type
+CREATE INDEX component_technology IF NOT EXISTS
+FOR (c:Component) ON (c.technology);
+
+CREATE INDEX component_type IF NOT EXISTS
+FOR (c:Component) ON (c.type);
+
+CREATE INDEX application_type IF NOT EXISTS
+FOR (a:Application) ON (a.type);
+
+CREATE INDEX code_file_language IF NOT EXISTS
+FOR (cf:CodeFile) ON (cf.language);
+
+CREATE INDEX data_object_type IF NOT EXISTS
+FOR (d:DataObject) ON (d.type);
+
+// Business Value
+CREATE INDEX application_business_value IF NOT EXISTS
+FOR (a:Application) ON (a.businessValue);
+
+CREATE INDEX business_capability_maturity IF NOT EXISTS
+FOR (bc:BusinessCapability) ON (bc.maturity);
+
+// ============================================================================
+// COMPOSITE INDEXES - Common filter combinations
+// ============================================================================
+
+// Application filtering
+CREATE INDEX application_lifecycle_value IF NOT EXISTS
+FOR (a:Application) ON (a.lifecycle, a.businessValue);
+
+// Compliance scoping
+CREATE INDEX data_object_sensitivity_app IF NOT EXISTS
+FOR (d:DataObject) ON (d.sensitivity, d.application);
+
+// Change management
+CREATE INDEX app_change_status_priority IF NOT EXISTS
+FOR (ac:AppChange) ON (ac.status, ac.priority);
+
+CREATE INDEX infra_change_status_priority IF NOT EXISTS
+FOR (ic:InfraChange) ON (ic.status, ic.priority);
+
+// Infrastructure deployment
+CREATE INDEX infrastructure_env_criticality IF NOT EXISTS
+FOR (i:Infrastructure) ON (i.environment, i.criticality);
+
+CREATE INDEX server_env_purpose IF NOT EXISTS
+FOR (s:Server) ON (s.environment, s.purpose);
+
+// Full-text search indexes (all entity types)
 CALL db.index.fulltext.createNodeIndex(
   'searchAllEntities',
-  ['Requirement', 'Application', 'CodeComponent', 'DataObject', 'Infrastructure', 'BusinessCapability'],
+  [
+    'Requirement', 'Application', 'CodeComponent', 'DataObject',
+    'Infrastructure', 'BusinessCapability', 'Component', 'Server',
+    'AppChange', 'InfraChange', 'Diagram', 'DiagramEntity'
+  ],
   ['name', 'description']
 ) IF NOT EXISTS;
 
