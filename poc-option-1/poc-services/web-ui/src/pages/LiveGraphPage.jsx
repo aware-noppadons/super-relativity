@@ -44,10 +44,11 @@ const BusinessCapabilityNode = ({ data }) => (
     minWidth: '200px',
     textAlign: 'center',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    cursor: data.collapsible ? 'pointer' : 'default',
   }}>
     <Handle type="target" position={Position.Left} />
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
-      {data.label}
+      {data.collapsible && (data.collapsed ? '▶ ' : '▼ ')}{data.label}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       BusinessCapability
@@ -66,10 +67,11 @@ const DataObjectNode = ({ data }) => (
     minWidth: '180px',
     textAlign: 'center',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    cursor: data.collapsible ? 'pointer' : 'default',
   }}>
     <Handle type="target" position={Position.Left} />
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
-      {data.label}
+      {data.collapsible && (data.collapsed ? '▶ ' : '▼ ')}{data.label}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       DataObject
@@ -88,10 +90,11 @@ const ComponentNode = ({ data }) => (
     minWidth: '180px',
     textAlign: 'center',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    cursor: data.collapsible ? 'pointer' : 'default',
   }}>
     <Handle type="target" position={Position.Left} />
     <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
-      {data.label}
+      {data.collapsible && (data.collapsed ? '▶ ' : '▼ ')}{data.label}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
       Component
@@ -122,11 +125,59 @@ const ServerNode = ({ data }) => (
   </div>
 );
 
+const AppChangeNode = ({ data }) => (
+  <div style={{
+    padding: '12px 20px',
+    borderRadius: '8px',
+    background: '#00BCD4',
+    color: 'white',
+    border: '3px solid #0097A7',
+    minWidth: '180px',
+    textAlign: 'center',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    cursor: data.collapsible ? 'pointer' : 'default',
+  }}>
+    <Handle type="target" position={Position.Left} />
+    <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+      {data.collapsible && (data.collapsed ? '▶ ' : '▼ ')}{data.label}
+    </div>
+    <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
+      AppChange
+    </div>
+    <Handle type="source" position={Position.Right} />
+  </div>
+);
+
+const InfraChangeNode = ({ data }) => (
+  <div style={{
+    padding: '12px 20px',
+    borderRadius: '8px',
+    background: '#795548',
+    color: 'white',
+    border: '3px solid #5D4037',
+    minWidth: '180px',
+    textAlign: 'center',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    cursor: data.collapsible ? 'pointer' : 'default',
+  }}>
+    <Handle type="target" position={Position.Left} />
+    <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+      {data.collapsible && (data.collapsed ? '▶ ' : '▼ ')}{data.label}
+    </div>
+    <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
+      InfraChange
+    </div>
+    <Handle type="source" position={Position.Right} />
+  </div>
+);
+
 const nodeTypes = {
   BusinessCapability: BusinessCapabilityNode,
   DataObject: DataObjectNode,
   Component: ComponentNode,
   Server: ServerNode,
+  AppChange: AppChangeNode,
+  InfraChange: InfraChangeNode,
 };
 
 function transformGraphQLToReactflow(graphData) {
@@ -183,6 +234,31 @@ function transformGraphQLToReactflow(graphData) {
     });
   }
 
+  // Identify reverse BusinessCapabilities (BusinessCapabilities that point to already-visited nodes)
+  // These should be positioned to the right of the nodes they point to
+  const reverseBusinessCapabilities = new Set();
+  graphData.nodes.forEach(node => {
+    if (node.nodeType === 'BusinessCapability' && !startNodes.includes(node.id)) {
+      // Check if this BC points to any nodes that are already visited (e.g., DataObjects)
+      const targets = outgoingEdges.get(node.id) || [];
+      const pointsToVisitedNodes = targets.some(targetId => visited.has(targetId));
+
+      if (pointsToVisitedNodes && !visited.has(node.id)) {
+        // This is a reverse BC - position it to the right of its target
+        const maxTargetLevel = Math.max(...targets.map(targetId => {
+          const targetNode = nodeMap.get(targetId);
+          return targetNode ? targetNode.level : 0;
+        }));
+        const nodeData = nodeMap.get(node.id);
+        if (nodeData) {
+          nodeData.level = maxTargetLevel + 1;
+          nodeData.isReverse = true; // Mark as reverse for collapse logic
+        }
+        reverseBusinessCapabilities.add(node.id);
+      }
+    }
+  });
+
   // Group nodes by level
   const nodesByLevel = new Map();
   nodeMap.forEach(node => {
@@ -192,10 +268,38 @@ function transformGraphQLToReactflow(graphData) {
     nodesByLevel.get(node.level).push(node);
   });
 
-  // Position nodes
+  // Build parent-child relationships from edges
+  const childToParent = new Map();
+  graphData.edges.forEach(edge => {
+    // The source is the parent of the target in a directed graph
+    if (!childToParent.has(edge.target)) {
+      childToParent.set(edge.target, []);
+    }
+    childToParent.get(edge.target).push(edge.source);
+  });
+
+  // Position nodes and track initially collapsed nodes
   const nodes = [];
+  const initiallyCollapsedNodeIds = [];
+
   nodesByLevel.forEach((levelNodes, level) => {
     levelNodes.forEach((node, indexInLevel) => {
+      const parents = childToParent.get(node.id) || [];
+      const hasChildren = (outgoingEdges.get(node.id) || []).length > 0;
+      const isReverse = node.isReverse || false;
+
+      // Collapse logic:
+      // - Nodes at level 1 with children (default behavior)
+      // - OR reverse BusinessCapabilities (always collapsed)
+      const shouldBeCollapsed = (level === 1 && hasChildren) || (isReverse && hasChildren);
+      if (shouldBeCollapsed) {
+        initiallyCollapsedNodeIds.push(node.id);
+      }
+
+      // Hide nodes at level > 1 by default
+      // EXCEPT reverse BusinessCapabilities themselves (they should be visible)
+      const shouldBeHidden = level > 1 && !isReverse;
+
       nodes.push({
         id: node.id,
         type: node.nodeType,
@@ -204,6 +308,10 @@ function transformGraphQLToReactflow(graphData) {
           level: node.level,
           nodeType: node.nodeType,
           properties: node.properties,
+          parentId: parents[0], // Primary parent for collapse tracking
+          collapsible: hasChildren,
+          collapsed: shouldBeCollapsed,
+          isReverse: isReverse,
         },
         position: {
           x: level * 350,
@@ -211,10 +319,13 @@ function transformGraphQLToReactflow(graphData) {
         },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
+        hidden: shouldBeHidden,
       });
     });
   });
 
+  // Hide edges connected to hidden nodes
+  const hiddenNodeIds = new Set(nodes.filter(n => n.hidden).map(n => n.id));
   const edges = graphData.edges.map(edge => ({
     id: edge.id,
     source: edge.source,
@@ -227,30 +338,35 @@ function transformGraphQLToReactflow(graphData) {
       type: 'arrowclosed',
       color: '#999',
     },
+    hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target),
   }));
 
-  return { nodes, edges };
+  return { nodes, edges, initiallyCollapsedNodeIds };
 }
 
 // Example Cypher queries
 const EXAMPLE_QUERIES = {
-  paymentProcessing: `MATCH path = (bc:BusinessCapability {name: 'Payment Processing'})-[*1..3]-(related)
-RETURN path
+  paymentProcessing: `// Forward relationships from Payment Processing
+MATCH path1 = (bc:BusinessCapability {name: 'Payment Processing'})-[*1..3]->(related)
+// Also find other BusinessCapabilities that share the same DataObjects (reverse direction)
+OPTIONAL MATCH path2 = (related)<-[r]-(otherBc:BusinessCapability)
+WHERE otherBc <> bc AND labels(related)[0] IN ['DataObject']
+RETURN path1, path2
 LIMIT 50`,
-  allBusinessCapabilities: `MATCH (bc:BusinessCapability)-[r]-(related)
+  allBusinessCapabilities: `MATCH (bc:BusinessCapability)-[r]->(related)
 RETURN bc, r, related
 LIMIT 100`,
-  applicationProcessing: `MATCH path = (bc:BusinessCapability {name: 'Application Processing'})-[*1..2]-(related)
+  applicationProcessing: `MATCH path = (bc:BusinessCapability {name: 'Application Processing'})-[*1..2]->(related)
 RETURN path
 LIMIT 50`,
-  applicationRequirements: `MATCH (app:Application)-[r:SATISFIES]->(req:Requirement)-[r2:SUPPORTS]->(cap:BusinessCapability)
-RETURN app, r, req, r2, cap
-LIMIT 50`,
-  dataObjectFlow: `MATCH path = (do:DataObject)-[*1..2]-(related)
+  applicationRequirements: `MATCH path = (app:Application)-[:SATISFIES]->(req:Requirement)-[:SUPPORTS]->(cap:BusinessCapability)
 RETURN path
 LIMIT 50`,
-  serverDependencies: `MATCH (s:Server)-[r]-(c:Component)
-RETURN s, r, c
+  dataObjectFlow: `MATCH path = (do:DataObject)-[*1..2]->(related)
+RETURN path
+LIMIT 50`,
+  serverDependencies: `MATCH path = (s:Server)<-[:INSTALLED_ON]-(c:Component)
+RETURN path
 LIMIT 100`,
 };
 
@@ -258,6 +374,7 @@ function LiveGraphVisualization() {
   const navigate = useNavigate();
   const [cypherQuery, setCypherQuery] = useState(EXAMPLE_QUERIES.paymentProcessing);
   const [queryVars, setQueryVars] = useState({ cypherQuery: EXAMPLE_QUERIES.paymentProcessing });
+  const [collapsedNodes, setCollapsedNodes] = React.useState(new Set());
 
   const { loading, error, data } = useQuery(GET_CUSTOM_CYPHER_GRAPH, {
     variables: queryVars,
@@ -280,13 +397,91 @@ function LiveGraphVisualization() {
 
   React.useEffect(() => {
     if (data?.customCypherGraph) {
-      const { nodes, edges } = transformGraphQLToReactflow(data.customCypherGraph);
+      const { nodes, edges, initiallyCollapsedNodeIds } = transformGraphQLToReactflow(data.customCypherGraph);
       if (nodes.length > 0) {
         setNodes(nodes);
         setEdges(edges);
+        setCollapsedNodes(new Set(initiallyCollapsedNodeIds)); // Set initial collapsed state
       }
     }
   }, [data, setNodes, setEdges]);
+
+  const toggleNodeCollapse = React.useCallback((nodeId) => {
+    setCollapsedNodes((prevCollapsed) => {
+      const newCollapsedNodes = new Set(prevCollapsed);
+      const isCurrentlyCollapsed = prevCollapsed.has(nodeId);
+
+      if (isCurrentlyCollapsed) {
+        newCollapsedNodes.delete(nodeId);
+      } else {
+        newCollapsedNodes.add(nodeId);
+      }
+
+      const shouldHide = !isCurrentlyCollapsed;
+
+      // Get all descendants to hide/show
+      const getDescendants = (parentId, currentNodes) => {
+        const descendants = [];
+        const queue = [parentId];
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+          const children = currentNodes.filter(n => n.data.parentId === current);
+          children.forEach(child => {
+            descendants.push(child.id);
+            queue.push(child.id);
+          });
+        }
+
+        return descendants;
+      };
+
+      // Update nodes
+      setNodes((nds) => {
+        const descendants = getDescendants(nodeId, nds);
+
+        return nds.map((n) => {
+          if (n.id === nodeId) {
+            return {
+              ...n,
+              data: { ...n.data, collapsed: shouldHide },
+            };
+          }
+          if (descendants.includes(n.id)) {
+            return { ...n, hidden: shouldHide };
+          }
+          return n;
+        });
+      });
+
+      // Update edges
+      setEdges((eds) => {
+        const descendants = getDescendants(nodeId, displayNodes);
+
+        return eds.map((e) => {
+          const isAffected = descendants.includes(e.target) ||
+                            descendants.includes(e.source) ||
+                            (e.source === nodeId && shouldHide);
+
+          if (isAffected) {
+            return { ...e, hidden: shouldHide };
+          }
+          return e;
+        });
+      });
+
+      return newCollapsedNodes;
+    });
+  }, [displayNodes, setNodes, setEdges]);
+
+  const onNodeClick = React.useCallback(
+    (event, node) => {
+      if (node.data.collapsible) {
+        toggleNodeCollapse(node.id);
+      }
+    },
+    [toggleNodeCollapse]
+  );
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -523,6 +718,7 @@ function LiveGraphVisualization() {
             edges={displayEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
             fitView
             attributionPosition="bottom-right"
@@ -546,6 +742,53 @@ function LiveGraphVisualization() {
             />
             <Background variant="dots" gap={12} size={1} />
           </ReactFlow>
+        )}
+
+        {/* Legend */}
+        {!loading && !error && displayNodes.length > 0 && (
+          <div style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            background: 'rgba(255,255,255,0.95)',
+            padding: '12px',
+            borderRadius: '6px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            fontSize: '12px',
+            maxWidth: '200px',
+            zIndex: 10,
+          }}>
+            <strong style={{ fontSize: '14px' }}>Legend</strong>
+            <div style={{ marginTop: '8px', fontSize: '11px', lineHeight: '1.5' }}>
+              💡 <strong>Click</strong> nodes with ▶/▼ to expand/collapse
+            </div>
+            <div style={{ marginTop: '12px', borderTop: '1px solid #ddd', paddingTop: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ width: '18px', height: '18px', background: '#4CAF50', marginRight: '6px', borderRadius: '3px' }}></div>
+                <span style={{ fontSize: '11px' }}>BusinessCapability</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ width: '18px', height: '18px', background: '#2196F3', marginRight: '6px', borderRadius: '3px' }}></div>
+                <span style={{ fontSize: '11px' }}>DataObject</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ width: '18px', height: '18px', background: '#FF9800', marginRight: '6px', borderRadius: '3px' }}></div>
+                <span style={{ fontSize: '11px' }}>Component</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ width: '18px', height: '18px', background: '#9C27B0', marginRight: '6px', borderRadius: '3px' }}></div>
+                <span style={{ fontSize: '11px' }}>Server</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ width: '18px', height: '18px', background: '#00BCD4', marginRight: '6px', borderRadius: '3px' }}></div>
+                <span style={{ fontSize: '11px' }}>AppChange</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: '18px', height: '18px', background: '#795548', marginRight: '6px', borderRadius: '3px' }}></div>
+                <span style={{ fontSize: '11px' }}>InfraChange</span>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

@@ -26,6 +26,8 @@ let dataObjects = [];
 let infrastructure = [];
 let contextDiagrams = [];
 let relationships = [];
+let appChanges = [];
+let infraChanges = [];
 
 // Load sample data on startup
 function loadSampleData() {
@@ -41,6 +43,8 @@ function loadSampleData() {
     infrastructure = data.infrastructure || [];
     contextDiagrams = data.contextDiagrams || [];
     relationships = data.relationships || [];
+    appChanges = data.appChanges || [];
+    infraChanges = data.infraChanges || [];
     console.log(`✅ Sample data loaded successfully:`);
     console.log(`   - ${businessCapabilities.length} business capabilities`);
     console.log(`   - ${applications.length} applications`);
@@ -50,6 +54,8 @@ function loadSampleData() {
     console.log(`   - ${infrastructure.length} infrastructure components`);
     console.log(`   - ${contextDiagrams.length} context diagrams`);
     console.log(`   - ${relationships.length} relationships`);
+    console.log(`   - ${appChanges.length} app changes`);
+    console.log(`   - ${infraChanges.length} infra changes`);
   } else {
     // Initialize with default sample data
     initializeDefaultData();
@@ -667,6 +673,179 @@ function initializeDefaultData() {
     }
   ];
 
+  // Sample Application Changes
+  appChanges = [
+    {
+      id: 'ACH-001',
+      name: 'Add Payment Processing API Endpoint',
+      changeType: 'New Feature',
+      status: 'Planned',
+      priority: 'High',
+      plannedDate: '2025-02-01',
+      implementedDate: null,
+      description: 'Add new API endpoint for payment processing',
+      components: ['COMP-001'],  // Registration Form
+      businessCapabilities: ['CAP-005'],  // Payment Processing
+      dataObjects: ['DATA-456'],  // Transactions
+      impactLevel: 'Medium',
+      riskLevel: 'Low'
+    },
+    {
+      id: 'ACH-002',
+      name: 'Enhance Fraud Detection Algorithm',
+      changeType: 'Enhancement',
+      status: 'In Progress',
+      priority: 'Critical',
+      plannedDate: '2025-01-15',
+      implementedDate: null,
+      description: 'Improve ML model for fraud detection',
+      components: ['COMP-005'],  // Fraud Detector
+      businessCapabilities: ['CAP-006'],  // Risk Assessment & Fraud Detection
+      dataObjects: ['DATA-890', 'DATA-456'],  // FraudScores, Transactions
+      impactLevel: 'High',
+      riskLevel: 'Medium'
+    },
+    {
+      id: 'ACH-003',
+      name: 'Customer Portal UI Redesign',
+      changeType: 'Enhancement',
+      status: 'In Progress',
+      priority: 'Medium',
+      plannedDate: '2025-01-20',
+      implementedDate: null,
+      description: 'Modernize customer portal user interface',
+      components: ['COMP-001', 'COMP-002'],  // Registration Form, Status Dashboard
+      businessCapabilities: ['CAP-001', 'CAP-004'],  // Customer Onboarding, Customer Service
+      dataObjects: [],  // No direct data object changes
+      impactLevel: 'Low',
+      riskLevel: 'Low'
+    },
+    {
+      id: 'ACH-004',
+      name: 'Document Storage Migration to S3',
+      changeType: 'Migration',
+      status: 'Completed',
+      priority: 'High',
+      plannedDate: '2024-12-01',
+      implementedDate: '2024-12-20',
+      description: 'Migrate document storage from on-prem to AWS S3',
+      components: ['COMP-007', 'COMP-008'],  // Document Upload/Retrieval
+      businessCapabilities: ['CAP-003'],  // Document Management
+      dataObjects: ['DATA-345'],  // DocumentStore
+      impactLevel: 'High',
+      riskLevel: 'Medium'
+    },
+    {
+      id: 'ACH-005',
+      name: 'Add Real-time Analytics Dashboard',
+      changeType: 'New Feature',
+      status: 'Planned',
+      priority: 'Medium',
+      plannedDate: '2025-03-01',
+      implementedDate: null,
+      description: 'Create real-time analytics dashboard for business metrics',
+      components: ['COMP-002'],  // Status Dashboard
+      businessCapabilities: ['CAP-008'],  // Analytics & BI
+      dataObjects: ['DATA-123', 'DATA-789', 'DATA-456'],  // Analytics, Customer, Transactions
+      impactLevel: 'Medium',
+      riskLevel: 'Low'
+    },
+    {
+      id: 'ACH-006',
+      name: 'Deprecate Legacy Authentication',
+      changeType: 'Deprecation',
+      status: 'Planned',
+      priority: 'Medium',
+      plannedDate: '2025-04-01',
+      implementedDate: null,
+      description: 'Remove legacy authentication method and migrate to OAuth2',
+      components: ['COMP-003'],  // Authentication Service
+      businessCapabilities: ['CAP-001', 'CAP-004'],  // Customer Onboarding, Customer Service
+      dataObjects: ['DATA-789'],  // CustomerTable
+      impactLevel: 'High',
+      riskLevel: 'High'
+    }
+  ];
+
+  // Sample Infrastructure Changes
+  infraChanges = [
+    {
+      id: 'ICH-001',
+      name: 'Upgrade Production Web Servers to Ubuntu 24.04',
+      changeType: 'OS Upgrade',
+      status: 'Planned',
+      priority: 'Medium',
+      plannedDate: '2025-02-15',
+      implementedDate: null,
+      description: 'Upgrade all production web servers from Ubuntu 22.04 to 24.04',
+      servers: ['SRV-001', 'SRV-002'],  // web-prod-01, web-prod-02
+      impactLevel: 'Medium',
+      riskLevel: 'Medium',
+      downtime: '2 hours',
+      rollbackPlan: 'Snapshot available for quick rollback'
+    },
+    {
+      id: 'ICH-002',
+      name: 'Scale API Server Capacity',
+      changeType: 'Scaling',
+      status: 'In Progress',
+      priority: 'High',
+      plannedDate: '2025-01-10',
+      implementedDate: null,
+      description: 'Add 2 additional API servers to handle increased load',
+      servers: ['SRV-003', 'SRV-004'],  // api-prod-01, api-prod-02
+      impactLevel: 'Low',
+      riskLevel: 'Low',
+      downtime: 'None',
+      rollbackPlan: 'Remove new servers from load balancer'
+    },
+    {
+      id: 'ICH-003',
+      name: 'Database Server Memory Upgrade',
+      changeType: 'Hardware Upgrade',
+      status: 'Completed',
+      priority: 'Critical',
+      plannedDate: '2024-12-15',
+      implementedDate: '2024-12-18',
+      description: 'Upgrade database server memory from 32GB to 64GB',
+      servers: ['SRV-005'],  // db-prod-01
+      impactLevel: 'High',
+      riskLevel: 'Medium',
+      downtime: '30 minutes',
+      rollbackPlan: 'Restore from backup if issues arise'
+    },
+    {
+      id: 'ICH-004',
+      name: 'Install Security Patches on All Servers',
+      changeType: 'Security Patch',
+      status: 'Planned',
+      priority: 'Critical',
+      plannedDate: '2025-01-25',
+      implementedDate: null,
+      description: 'Apply critical security patches across all environments',
+      servers: ['SRV-001', 'SRV-002', 'SRV-003', 'SRV-004', 'SRV-005', 'SRV-006', 'SRV-007', 'SRV-008'],
+      impactLevel: 'Low',
+      riskLevel: 'Low',
+      downtime: 'Rolling restart - 5 min per server',
+      rollbackPlan: 'Revert patches if system instability detected'
+    },
+    {
+      id: 'ICH-005',
+      name: 'Decommission NFT Performance Server',
+      changeType: 'Decommission',
+      status: 'Planned',
+      priority: 'Low',
+      plannedDate: '2025-03-01',
+      implementedDate: null,
+      description: 'Decommission NFT performance testing server',
+      servers: ['SRV-014'],  // nft-perf-01
+      impactLevel: 'Low',
+      riskLevel: 'Low',
+      downtime: 'N/A',
+      rollbackPlan: 'Restore from backup if needed'
+    }
+  ];
+
   // Sample Relationships
   relationships = [
     // Requirements Support Business Capabilities
@@ -866,7 +1045,53 @@ function initializeDefaultData() {
     { from: 'SRV-009', to: 'SRV-010', type: 'WORKS_WITH' },  // UAT web works with UAT API
 
     // SIT environment work-together
-    { from: 'SRV-011', to: 'SRV-012', type: 'WORKS_WITH' }   // SIT web works with SIT API
+    { from: 'SRV-011', to: 'SRV-012', type: 'WORKS_WITH' },  // SIT web works with SIT API
+
+    // AppChange to Component (mandatory)
+    { from: 'ACH-001', to: 'COMP-001', type: 'IMPACTS' },  // Payment API impacts Registration Form
+    { from: 'ACH-002', to: 'COMP-005', type: 'IMPACTS' },  // Fraud enhancement impacts Fraud Detector
+    { from: 'ACH-003', to: 'COMP-001', type: 'IMPACTS' },  // UI Redesign impacts Registration Form
+    { from: 'ACH-003', to: 'COMP-002', type: 'IMPACTS' },  // UI Redesign impacts Status Dashboard
+    { from: 'ACH-004', to: 'COMP-007', type: 'IMPACTS' },  // S3 Migration impacts Document Upload
+    { from: 'ACH-004', to: 'COMP-008', type: 'IMPACTS' },  // S3 Migration impacts Document Retrieval
+    { from: 'ACH-005', to: 'COMP-002', type: 'IMPACTS' },  // Analytics Dashboard impacts Status Dashboard
+    { from: 'ACH-006', to: 'COMP-003', type: 'IMPACTS' },  // Auth deprecation impacts Authentication Service
+
+    // AppChange to BusinessCapability (mandatory)
+    { from: 'ACH-001', to: 'CAP-005', type: 'ENABLES' },  // Payment API enables Payment Processing
+    { from: 'ACH-002', to: 'CAP-006', type: 'ENHANCES' },  // Fraud enhancement enhances Risk Assessment
+    { from: 'ACH-003', to: 'CAP-001', type: 'ENHANCES' },  // UI Redesign enhances Customer Onboarding
+    { from: 'ACH-003', to: 'CAP-004', type: 'ENHANCES' },  // UI Redesign enhances Customer Service
+    { from: 'ACH-004', to: 'CAP-003', type: 'ENHANCES' },  // S3 Migration enhances Document Management
+    { from: 'ACH-005', to: 'CAP-008', type: 'ENABLES' },  // Analytics Dashboard enables Analytics & BI
+    { from: 'ACH-006', to: 'CAP-001', type: 'IMPACTS' },  // Auth deprecation impacts Customer Onboarding
+    { from: 'ACH-006', to: 'CAP-004', type: 'IMPACTS' },  // Auth deprecation impacts Customer Service
+
+    // AppChange to DataObject (sometimes)
+    { from: 'ACH-001', to: 'DATA-456', type: 'MODIFIES' },  // Payment API modifies Transactions
+    { from: 'ACH-002', to: 'DATA-890', type: 'MODIFIES' },  // Fraud enhancement modifies FraudScores
+    { from: 'ACH-002', to: 'DATA-456', type: 'READS' },  // Fraud enhancement reads Transactions
+    { from: 'ACH-004', to: 'DATA-345', type: 'MIGRATES' },  // S3 Migration migrates DocumentStore
+    { from: 'ACH-005', to: 'DATA-123', type: 'MODIFIES' },  // Analytics Dashboard modifies Analytics
+    { from: 'ACH-005', to: 'DATA-789', type: 'READS' },  // Analytics Dashboard reads CustomerTable
+    { from: 'ACH-005', to: 'DATA-456', type: 'READS' },  // Analytics Dashboard reads Transactions
+    { from: 'ACH-006', to: 'DATA-789', type: 'MODIFIES' },  // Auth deprecation modifies CustomerTable
+
+    // InfraChange to Server
+    { from: 'ICH-001', to: 'SRV-001', type: 'UPGRADES' },  // OS Upgrade on web-prod-01
+    { from: 'ICH-001', to: 'SRV-002', type: 'UPGRADES' },  // OS Upgrade on web-prod-02
+    { from: 'ICH-002', to: 'SRV-003', type: 'SCALES' },  // Scaling api-prod-01
+    { from: 'ICH-002', to: 'SRV-004', type: 'SCALES' },  // Scaling api-prod-02
+    { from: 'ICH-003', to: 'SRV-005', type: 'UPGRADES' },  // Memory upgrade on db-prod-01
+    { from: 'ICH-004', to: 'SRV-001', type: 'PATCHES' },  // Security patches on all servers
+    { from: 'ICH-004', to: 'SRV-002', type: 'PATCHES' },
+    { from: 'ICH-004', to: 'SRV-003', type: 'PATCHES' },
+    { from: 'ICH-004', to: 'SRV-004', type: 'PATCHES' },
+    { from: 'ICH-004', to: 'SRV-005', type: 'PATCHES' },
+    { from: 'ICH-004', to: 'SRV-006', type: 'PATCHES' },
+    { from: 'ICH-004', to: 'SRV-007', type: 'PATCHES' },
+    { from: 'ICH-004', to: 'SRV-008', type: 'PATCHES' },
+    { from: 'ICH-005', to: 'SRV-014', type: 'DECOMMISSIONS' }  // Decommission nft-perf-01
   ];
 }
 
@@ -1061,6 +1286,48 @@ app.get('/capabilities/:id', (req, res) => {
     res.json({ data: cap });
   } else {
     res.status(404).json({ error: 'Capability not found' });
+  }
+});
+
+// Application Changes
+app.get('/app-changes', (req, res) => {
+  const { status, priority, changeType } = req.query;
+  let filtered = appChanges;
+
+  if (status) filtered = filtered.filter(ac => ac.status === status);
+  if (priority) filtered = filtered.filter(ac => ac.priority === priority);
+  if (changeType) filtered = filtered.filter(ac => ac.changeType === changeType);
+
+  res.json({ data: filtered, count: filtered.length });
+});
+
+app.get('/app-changes/:id', (req, res) => {
+  const change = appChanges.find(ac => ac.id === req.params.id);
+  if (change) {
+    res.json({ data: change });
+  } else {
+    res.status(404).json({ error: 'App change not found' });
+  }
+});
+
+// Infrastructure Changes
+app.get('/infra-changes', (req, res) => {
+  const { status, priority, changeType } = req.query;
+  let filtered = infraChanges;
+
+  if (status) filtered = filtered.filter(ic => ic.status === status);
+  if (priority) filtered = filtered.filter(ic => ic.priority === priority);
+  if (changeType) filtered = filtered.filter(ic => ic.changeType === changeType);
+
+  res.json({ data: filtered, count: filtered.length });
+});
+
+app.get('/infra-changes/:id', (req, res) => {
+  const change = infraChanges.find(ic => ic.id === req.params.id);
+  if (change) {
+    res.json({ data: change });
+  } else {
+    res.status(404).json({ error: 'Infra change not found' });
   }
 });
 

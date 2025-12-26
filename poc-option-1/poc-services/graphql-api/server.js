@@ -109,6 +109,38 @@ const schema = buildSchema(`
     edges: [GraphEdge]!
   }
 
+  type AppChange {
+    id: ID!
+    name: String!
+    changeType: String!
+    status: String!
+    priority: String!
+    plannedDate: String
+    implementedDate: String
+    description: String
+    impactLevel: String
+    riskLevel: String
+    components: [String]
+    businessCapabilities: [String]
+    dataObjects: [String]
+  }
+
+  type InfraChange {
+    id: ID!
+    name: String!
+    changeType: String!
+    status: String!
+    priority: String!
+    plannedDate: String
+    implementedDate: String
+    description: String
+    impactLevel: String
+    riskLevel: String
+    downtime: String
+    rollbackPlan: String
+    servers: [String]
+  }
+
   type Query {
     # Applications
     applications: [Application]
@@ -135,6 +167,12 @@ const schema = buildSchema(`
 
     # Custom Cypher query for graph visualization
     customCypherGraph(cypherQuery: String!): HierarchicalGraph
+
+    # Change management
+    appChanges(status: String, priority: String, changeType: String): [AppChange]
+    appChange(id: ID!): AppChange
+    infraChanges(status: String, priority: String, changeType: String): [InfraChange]
+    infraChange(id: ID!): InfraChange
   }
 
   type Mutation {
@@ -297,6 +335,141 @@ const root = {
       `, { query });
 
       return result.records.map(record => record.get('a').properties);
+    } finally {
+      await session.close();
+    }
+  },
+
+  // Change management
+  appChanges: async ({ status, priority, changeType }) => {
+    const session = neo4jDriver.session();
+    try {
+      let whereClauses = [];
+      let params = {};
+
+      if (status) {
+        whereClauses.push('ac.status = $status');
+        params.status = status;
+      }
+      if (priority) {
+        whereClauses.push('ac.priority = $priority');
+        params.priority = priority;
+      }
+      if (changeType) {
+        whereClauses.push('ac.changeType = $changeType');
+        params.changeType = changeType;
+      }
+
+      const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+      const result = await session.run(`
+        MATCH (ac:AppChange)
+        ${whereClause}
+        OPTIONAL MATCH (ac)-[:IMPACTS]->(comp:Component)
+        OPTIONAL MATCH (ac)-[:ENABLES|ENHANCES|IMPACTS]->(bc:BusinessCapability)
+        OPTIONAL MATCH (ac)-[:MODIFIES|READS|MIGRATES]->(do:DataObject)
+        RETURN ac,
+               collect(DISTINCT comp.id) as components,
+               collect(DISTINCT bc.id) as businessCapabilities,
+               collect(DISTINCT do.id) as dataObjects
+        LIMIT 100
+      `, params);
+
+      return result.records.map(record => ({
+        ...record.get('ac').properties,
+        components: record.get('components').filter(id => id),
+        businessCapabilities: record.get('businessCapabilities').filter(id => id),
+        dataObjects: record.get('dataObjects').filter(id => id),
+      }));
+    } finally {
+      await session.close();
+    }
+  },
+
+  appChange: async ({ id }) => {
+    const session = neo4jDriver.session();
+    try {
+      const result = await session.run(`
+        MATCH (ac:AppChange {id: $id})
+        OPTIONAL MATCH (ac)-[:IMPACTS]->(comp:Component)
+        OPTIONAL MATCH (ac)-[:ENABLES|ENHANCES|IMPACTS]->(bc:BusinessCapability)
+        OPTIONAL MATCH (ac)-[:MODIFIES|READS|MIGRATES]->(do:DataObject)
+        RETURN ac,
+               collect(DISTINCT comp.id) as components,
+               collect(DISTINCT bc.id) as businessCapabilities,
+               collect(DISTINCT do.id) as dataObjects
+      `, { id });
+
+      if (result.records.length === 0) return null;
+
+      const record = result.records[0];
+      return {
+        ...record.get('ac').properties,
+        components: record.get('components').filter(id => id),
+        businessCapabilities: record.get('businessCapabilities').filter(id => id),
+        dataObjects: record.get('dataObjects').filter(id => id),
+      };
+    } finally {
+      await session.close();
+    }
+  },
+
+  infraChanges: async ({ status, priority, changeType }) => {
+    const session = neo4jDriver.session();
+    try {
+      let whereClauses = [];
+      let params = {};
+
+      if (status) {
+        whereClauses.push('ic.status = $status');
+        params.status = status;
+      }
+      if (priority) {
+        whereClauses.push('ic.priority = $priority');
+        params.priority = priority;
+      }
+      if (changeType) {
+        whereClauses.push('ic.changeType = $changeType');
+        params.changeType = changeType;
+      }
+
+      const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+      const result = await session.run(`
+        MATCH (ic:InfraChange)
+        ${whereClause}
+        OPTIONAL MATCH (ic)-[:UPGRADES|SCALES|PATCHES|DECOMMISSIONS]->(srv:Server)
+        RETURN ic,
+               collect(DISTINCT srv.id) as servers
+        LIMIT 100
+      `, params);
+
+      return result.records.map(record => ({
+        ...record.get('ic').properties,
+        servers: record.get('servers').filter(id => id),
+      }));
+    } finally {
+      await session.close();
+    }
+  },
+
+  infraChange: async ({ id }) => {
+    const session = neo4jDriver.session();
+    try {
+      const result = await session.run(`
+        MATCH (ic:InfraChange {id: $id})
+        OPTIONAL MATCH (ic)-[:UPGRADES|SCALES|PATCHES|DECOMMISSIONS]->(srv:Server)
+        RETURN ic,
+               collect(DISTINCT srv.id) as servers
+      `, { id });
+
+      if (result.records.length === 0) return null;
+
+      const record = result.records[0];
+      return {
+        ...record.get('ic').properties,
+        servers: record.get('servers').filter(id => id),
+      };
     } finally {
       await session.close();
     }

@@ -298,6 +298,80 @@ async function performSync() {
       console.log(`[${jobId}] Synced ${serversData.data?.length || 0} servers`);
       totalEntities += serversData.data?.length || 0;
 
+      // 6. Sync Application Changes
+      console.log(`[${jobId}] Syncing application changes...`);
+      const { data: appChangesData } = await axios.get(`${LEANIX_API_URL}/app-changes`);
+      for (const change of appChangesData.data || []) {
+        await session.run(
+          `
+          MERGE (ac:AppChange {id: $id})
+          SET ac.name = $name,
+              ac.changeType = $changeType,
+              ac.status = $status,
+              ac.priority = $priority,
+              ac.plannedDate = $plannedDate,
+              ac.implementedDate = $implementedDate,
+              ac.description = $description,
+              ac.impactLevel = $impactLevel,
+              ac.riskLevel = $riskLevel,
+              ac.syncedAt = datetime()
+          `,
+          {
+            id: change.id,
+            name: change.name,
+            changeType: change.changeType,
+            status: change.status,
+            priority: change.priority,
+            plannedDate: change.plannedDate,
+            implementedDate: change.implementedDate,
+            description: change.description,
+            impactLevel: change.impactLevel,
+            riskLevel: change.riskLevel,
+          }
+        );
+      }
+      console.log(`[${jobId}] Synced ${appChangesData.data?.length || 0} application changes`);
+      totalEntities += appChangesData.data?.length || 0;
+
+      // 7. Sync Infrastructure Changes
+      console.log(`[${jobId}] Syncing infrastructure changes...`);
+      const { data: infraChangesData } = await axios.get(`${LEANIX_API_URL}/infra-changes`);
+      for (const change of infraChangesData.data || []) {
+        await session.run(
+          `
+          MERGE (ic:InfraChange {id: $id})
+          SET ic.name = $name,
+              ic.changeType = $changeType,
+              ic.status = $status,
+              ic.priority = $priority,
+              ic.plannedDate = $plannedDate,
+              ic.implementedDate = $implementedDate,
+              ic.description = $description,
+              ic.impactLevel = $impactLevel,
+              ic.riskLevel = $riskLevel,
+              ic.downtime = $downtime,
+              ic.rollbackPlan = $rollbackPlan,
+              ic.syncedAt = datetime()
+          `,
+          {
+            id: change.id,
+            name: change.name,
+            changeType: change.changeType,
+            status: change.status,
+            priority: change.priority,
+            plannedDate: change.plannedDate,
+            implementedDate: change.implementedDate,
+            description: change.description,
+            impactLevel: change.impactLevel,
+            riskLevel: change.riskLevel,
+            downtime: change.downtime,
+            rollbackPlan: change.rollbackPlan,
+          }
+        );
+      }
+      console.log(`[${jobId}] Synced ${infraChangesData.data?.length || 0} infrastructure changes`);
+      totalEntities += infraChangesData.data?.length || 0;
+
       // Fetch and sync relationships
       console.log(`[${jobId}] Fetching relationships from LeanIX...`);
       const { data: relationshipsData } = await axios.get(`${LEANIX_API_URL}/relationships`);
