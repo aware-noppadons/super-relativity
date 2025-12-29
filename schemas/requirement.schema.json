@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://super-relativity.example.com/schemas/requirement.json",
+  "title": "Super Relativity Requirement",
+  "description": "Schema for requirement entities in Super Relativity knowledge graph",
+  "type": "object",
+  "required": ["id", "name", "type", "priority"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^REQ-[0-9]+$",
+      "description": "Unique requirement identifier (format: REQ-###)",
+      "examples": ["REQ-001", "REQ-142"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Requirement name or title",
+      "examples": ["Multi-Factor Authentication", "GDPR Compliance"]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Functional",
+        "Non-Functional",
+        "Security",
+        "Compliance",
+        "Performance",
+        "Usability",
+        "Scalability",
+        "Reliability"
+      ],
+      "description": "Requirement type classification"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["Critical", "High", "Medium", "Low"],
+      "description": "Implementation priority"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Draft", "Approved", "In Progress", "Implemented", "Verified", "Rejected"],
+      "description": "Current requirement status",
+      "default": "Draft"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Detailed requirement description"
+    },
+    "capability": {
+      "type": "string",
+      "pattern": "^CAP-[0-9]+$",
+      "description": "Related business capability ID"
+    },
+    "application": {
+      "type": "string",
+      "pattern": "^APP-[0-9]+$",
+      "description": "Implementing application ID"
+    },
+    "requestedBy": {
+      "type": "string",
+      "description": "Requestor name or team"
+    },
+    "targetDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Target implementation date (YYYY-MM-DD or YYYY-QN)",
+      "examples": ["2025-12-31", "2025-Q2"]
+    },
+    "source": {
+      "type": "string",
+      "description": "Data source origin",
+      "examples": ["leanix", "jira", "manual"]
+    },
+    "lastSyncedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last synchronization"
+    }
+  },
+  "additionalProperties": false
+}

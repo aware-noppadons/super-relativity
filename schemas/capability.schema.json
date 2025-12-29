@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://super-relativity.example.com/schemas/capability.json",
+  "title": "Super Relativity Business Capability",
+  "description": "Schema for business capability entities in Super Relativity knowledge graph",
+  "type": "object",
+  "required": ["id", "name", "level"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^CAP-[0-9]+$",
+      "description": "Unique capability identifier (format: CAP-###)",
+      "examples": ["CAP-001", "CAP-042"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Business capability name",
+      "examples": ["Customer Onboarding", "Payment Processing"]
+    },
+    "level": {
+      "type": "string",
+      "pattern": "^L[0-5]$",
+      "description": "Hierarchy level (L0-L5, where L0 is top level)",
+      "examples": ["L0", "L1", "L2"]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Detailed description of the capability"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Owner or responsible party"
+    },
+    "criticality": {
+      "type": "string",
+      "enum": ["Critical", "High", "Medium", "Low"],
+      "description": "Business criticality level"
+    },
+    "maturity": {
+      "type": "string",
+      "enum": ["Initial", "Defined", "Managed", "Optimized"],
+      "description": "Capability maturity level"
+    },
+    "parent": {
+      "type": "string",
+      "pattern": "^CAP-[0-9]+$",
+      "description": "Parent capability ID (for hierarchy)"
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CAP-[0-9]+$"
+      },
+      "description": "Child capability IDs"
+    },
+    "application": {
+      "type": "string",
+      "pattern": "^APP-[0-9]+$",
+      "description": "Primary supporting application ID"
+    },
+    "source": {
+      "type": "string",
+      "description": "Data source origin",
+      "examples": ["leanix", "manual"]
+    },
+    "lastSyncedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last synchronization"
+    }
+  },
+  "additionalProperties": false
+}

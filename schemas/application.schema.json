@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://super-relativity.example.com/schemas/application.json",
+  "title": "Super Relativity Application",
+  "description": "Schema for application entities in Super Relativity knowledge graph",
+  "type": "object",
+  "required": ["id", "name", "type"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^APP-[0-9]+$",
+      "description": "Unique application identifier (format: APP-###)",
+      "examples": ["APP-123", "APP-456"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Application name",
+      "examples": ["Customer Portal", "Order Processing API"]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Web Application",
+        "Mobile Application",
+        "API Service",
+        "Database",
+        "Microservice",
+        "Batch Job",
+        "Desktop Application",
+        "Integration Service"
+      ],
+      "description": "Application type classification"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Detailed description of the application"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Active", "Development", "Deprecated", "Retired", "Planned"],
+      "description": "Current operational status",
+      "default": "Active"
+    },
+    "lifecycle": {
+      "type": "string",
+      "enum": ["Plan", "Build", "Run", "Retire"],
+      "description": "Current lifecycle stage",
+      "default": "Run"
+    },
+    "businessValue": {
+      "type": "string",
+      "enum": ["Critical", "High", "Medium", "Low"],
+      "description": "Business value assessment"
+    },
+    "businessCriticality": {
+      "type": "string",
+      "enum": ["Critical", "High", "Medium", "Low"],
+      "description": "Business criticality level"
+    },
+    "techStack": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Technologies and frameworks used",
+      "examples": [["React", "Node.js", "PostgreSQL"]]
+    },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "description": "Source code repository URLs",
+      "examples": [["https://github.com/org/app"]]
+    },
+    "owner": {
+      "type": "string",
+      "description": "Team or person responsible for the application"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^APP-[0-9]+$"
+      },
+      "description": "IDs of applications this application depends on"
+    },
+    "source": {
+      "type": "string",
+      "description": "Data source origin (leanix, backstage, manual, etc.)",
+      "examples": ["leanix", "backstage", "diagram_conversion"]
+    },
+    "lastSyncedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last synchronization"
+    }
+  },
+  "additionalProperties": false
+}

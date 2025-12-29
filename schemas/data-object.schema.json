@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://super-relativity.example.com/schemas/data-object.json",
+  "title": "Super Relativity Data Object",
+  "description": "Schema for data object entities in Super Relativity knowledge graph",
+  "type": "object",
+  "required": ["id", "name", "type"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^DATA-[0-9]+$",
+      "description": "Unique data object identifier (format: DATA-###)",
+      "examples": ["DATA-001", "DATA-789"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Data object name",
+      "examples": ["CustomerTable", "OrderQueue", "UserCache"]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Database Table",
+        "Collection",
+        "File",
+        "API Endpoint",
+        "Message Queue",
+        "Cache",
+        "Data Warehouse",
+        "Data Lake",
+        "Stream"
+      ],
+      "description": "Data object type classification"
+    },
+    "database": {
+      "type": "string",
+      "description": "Database name or data store identifier"
+    },
+    "schema": {
+      "type": "string",
+      "description": "Schema name (for databases)",
+      "examples": ["public", "dbo", "analytics"]
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": ["Public", "Internal", "Confidential", "PII", "Restricted"],
+      "description": "Data sensitivity classification",
+      "default": "Internal"
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Column/field names",
+      "examples": [["id", "name", "email", "created_at"]]
+    },
+    "recordCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of records/documents"
+    },
+    "growthRate": {
+      "type": "string",
+      "description": "Data growth rate",
+      "examples": ["10% annually", "1M records/month"]
+    },
+    "application": {
+      "type": "string",
+      "pattern": "^APP-[0-9]+$",
+      "description": "Owning application ID"
+    },
+    "source": {
+      "type": "string",
+      "description": "Data source origin",
+      "examples": ["leanix", "manual", "code_analysis"]
+    },
+    "lastSyncedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last synchronization"
+    }
+  },
+  "additionalProperties": false
+}

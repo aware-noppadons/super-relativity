@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://super-relativity.example.com/schemas/server.json",
+  "title": "Super Relativity Infrastructure/Server",
+  "description": "Schema for infrastructure and server entities in Super Relativity knowledge graph",
+  "type": "object",
+  "required": ["id", "name", "type", "environment"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^SRV-[0-9]+$",
+      "description": "Unique server identifier (format: SRV-###)",
+      "examples": ["SRV-001", "SRV-042"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Server name or hostname",
+      "examples": ["web-server-prod-01", "db-primary-us-east"]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Application Server",
+        "Database Server",
+        "Web Server",
+        "Container",
+        "VM",
+        "Load Balancer",
+        "Storage",
+        "Network Device",
+        "Cache Server"
+      ],
+      "description": "Infrastructure type classification"
+    },
+    "environment": {
+      "type": "string",
+      "enum": ["Production", "Staging", "Development", "QA", "UAT", "DR"],
+      "description": "Environment designation"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Active", "Inactive", "Maintenance", "Decommissioned"],
+      "description": "Current operational status",
+      "default": "Active"
+    },
+    "location": {
+      "type": "string",
+      "description": "Physical or cloud location",
+      "examples": ["AWS us-east-1", "Azure West US", "On-Prem DC1"]
+    },
+    "os": {
+      "type": "string",
+      "description": "Operating system",
+      "examples": ["Ubuntu 22.04", "Windows Server 2022", "RHEL 8"]
+    },
+    "cpu": {
+      "type": "string",
+      "description": "CPU specification",
+      "examples": ["8 cores", "4 vCPUs"]
+    },
+    "memory": {
+      "type": "string",
+      "description": "Memory specification",
+      "examples": ["32GB", "64GB RAM"]
+    },
+    "applications": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^APP-[0-9]+$"
+      },
+      "description": "IDs of applications deployed on this server"
+    },
+    "ipAddress": {
+      "type": "string",
+      "oneOf": [
+        {"format": "ipv4"},
+        {"format": "ipv6"}
+      ],
+      "description": "IP address"
+    },
+    "source": {
+      "type": "string",
+      "description": "Data source origin",
+      "examples": ["leanix", "cmdb", "manual"]
+    },
+    "lastSyncedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last synchronization"
+    }
+  },
+  "additionalProperties": false
+}
