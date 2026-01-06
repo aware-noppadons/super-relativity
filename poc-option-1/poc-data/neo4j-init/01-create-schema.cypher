@@ -306,6 +306,40 @@ CREATE (d3:DataObject {
   source: 'leanix'
 });
 
+// Sample Business Capabilities
+CREATE (bc1:BusinessCapability {
+  id: 'BC-001',
+  name: 'Customer Authentication',
+  level: 'L2',
+  criticality: 'High',
+  maturity: 'Optimized',
+  description: 'Capability to authenticate and authorize customers',
+  owner: 'Security Team',
+  source: 'leanix'
+})
+
+CREATE (bc2:BusinessCapability {
+  id: 'BC-002',
+  name: 'Application Validation',
+  level: 'L2',
+  criticality: 'High',
+  maturity: 'Managed',
+  description: 'Capability to validate application data according to business rules',
+  owner: 'Business Operations',
+  source: 'leanix'
+})
+
+CREATE (bc3:BusinessCapability {
+  id: 'BC-003',
+  name: 'Document Management',
+  level: 'L2',
+  criticality: 'Medium',
+  maturity: 'Managed',
+  description: 'Capability to store, retrieve, and manage documents securely',
+  owner: 'Platform Team',
+  source: 'leanix'
+});
+
 // Sample Containers (C4 Model)
 CREATE (cont1:Container {
   id: 'CONT-001',
@@ -390,6 +424,124 @@ CREATE (cont6:Container {
   source: 'architecture'
 });
 
+// Sample Components (C4 Model - Components within Containers)
+CREATE (comp1:Component {
+  id: 'COMP-001',
+  name: 'ApplicationController',
+  type: 'REST Controller',
+  container: 'CONT-003',
+  technology: 'Spring MVC',
+  description: 'Handles HTTP requests for application operations',
+  responsibilities: ['Request validation', 'Response formatting', 'Error handling'],
+  source: 'code'
+})
+
+CREATE (comp2:Component {
+  id: 'COMP-002',
+  name: 'ValidationService',
+  type: 'Business Logic',
+  container: 'CONT-003',
+  technology: 'Spring Service',
+  description: 'Validates application data according to business rules',
+  responsibilities: ['Data validation', 'Business rule enforcement', 'Validation error reporting'],
+  source: 'code'
+})
+
+CREATE (comp3:Component {
+  id: 'COMP-003',
+  name: 'WorkflowEngine',
+  type: 'Business Logic',
+  container: 'CONT-003',
+  technology: 'Spring Service',
+  description: 'Orchestrates application processing workflow',
+  responsibilities: ['Workflow execution', 'State management', 'Process coordination'],
+  source: 'code'
+})
+
+CREATE (comp4:Component {
+  id: 'COMP-004',
+  name: 'DataAccessLayer',
+  type: 'Data Access',
+  container: 'CONT-003',
+  technology: 'Spring Data JPA',
+  description: 'Handles database operations for application data',
+  responsibilities: ['CRUD operations', 'Query execution', 'Transaction management'],
+  source: 'code'
+})
+
+CREATE (comp5:Component {
+  id: 'COMP-005',
+  name: 'DocumentController',
+  type: 'REST Controller',
+  container: 'CONT-004',
+  technology: 'FastAPI',
+  description: 'Handles HTTP requests for document operations',
+  responsibilities: ['File upload handling', 'Document retrieval', 'Format validation'],
+  source: 'code'
+})
+
+CREATE (comp6:Component {
+  id: 'COMP-006',
+  name: 'EncryptionService',
+  type: 'Security Service',
+  container: 'CONT-004',
+  technology: 'Python cryptography',
+  description: 'Handles encryption and decryption of sensitive documents',
+  responsibilities: ['Encryption', 'Decryption', 'Key management'],
+  source: 'code'
+})
+
+CREATE (comp7:Component {
+  id: 'COMP-007',
+  name: 'StorageManager',
+  type: 'Integration',
+  container: 'CONT-004',
+  technology: 'boto3',
+  description: 'Manages interaction with S3 storage',
+  responsibilities: ['S3 upload', 'S3 download', 'Metadata management'],
+  source: 'code'
+});
+
+// Sample AppChange nodes (Application Changes)
+CREATE (ac1:AppChange {
+  id: 'AC-001',
+  name: 'Add multi-factor authentication',
+  type: 'Enhancement',
+  status: 'Planned',
+  priority: 'High',
+  changeType: 'add',
+  description: 'Add MFA capability to enhance security',
+  estimatedEffort: '3 weeks',
+  plannedDate: date('2025-03-01'),
+  source: 'change-management'
+})
+
+CREATE (ac2:AppChange {
+  id: 'AC-002',
+  name: 'Modify validation rules',
+  type: 'Modification',
+  status: 'In Progress',
+  priority: 'Medium',
+  changeType: 'modify',
+  description: 'Update validation logic to support new application types',
+  estimatedEffort: '1 week',
+  plannedDate: date('2025-02-15'),
+  source: 'change-management'
+})
+
+CREATE (ac3:AppChange {
+  id: 'AC-003',
+  name: 'Enable document versioning',
+  type: 'Enhancement',
+  status: 'Planned',
+  priority: 'Medium',
+  changeType: 'enable',
+  description: 'Enable version control for uploaded documents',
+  estimatedEffort: '2 weeks',
+  plannedDate: date('2025-03-15'),
+  source: 'change-management'
+});
+
 // ============================================================================
 // RELATIONSHIPS - Create connections between entities
 // ============================================================================
@@ -430,6 +582,45 @@ CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
 MATCH (a:Application {id: 'APP-789'}), (c:Container {id: 'CONT-004'})
 CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
 
+// Application → Application (C4 Context Diagram relationships)
+MATCH (a1:Application {id: 'APP-123'}), (a2:Application {id: 'APP-456'})
+CREATE (a1)-[:CALLS {
+  protocol: 'HTTPS/REST',
+  purpose: 'Application submission processing',
+  description: 'Customer Portal calls Application Processing API for application submission',
+  source: 'architecture'
+}]->(a2);
+
+MATCH (a1:Application {id: 'APP-456'}), (a2:Application {id: 'APP-789'})
+CREATE (a1)-[:CALLS {
+  protocol: 'HTTPS/REST',
+  purpose: 'Document validation',
+  description: 'Application Processing API calls Document Service for document validation',
+  source: 'architecture'
+}]->(a2);
+
+// Containers → Components (C4 Component Layer within Containers)
+MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-001'})
+CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
+
+MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-002'})
+CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
+
+MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-003'})
+CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
+
+MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-004'})
+CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
+
+MATCH (c:Container {id: 'CONT-004'}), (comp:Component {id: 'COMP-005'})
+CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
+
+MATCH (c:Container {id: 'CONT-004'}), (comp:Component {id: 'COMP-006'})
+CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
+
+MATCH (c:Container {id: 'CONT-004'}), (comp:Component {id: 'COMP-007'})
+CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
+
 // Container inter-communication
 MATCH (c1:Container {id: 'CONT-001'}), (c2:Container {id: 'CONT-002'})
 CREATE (c1)-[:COMMUNICATES_WITH {
@@ -463,31 +654,32 @@ CREATE (c1)-[:COMMUNICATES_WITH {
   source: 'architecture'
 }]->(c2);
 
-// Containers → Data Objects
-MATCH (c:Container {id: 'CONT-003'}), (d:DataObject {id: 'DATA-789'})
-CREATE (c)-[:USES {
+// Components → Data Objects (Component layer handles most data access)
+MATCH (comp:Component {id: 'COMP-004'}), (d:DataObject {id: 'DATA-789'})
+CREATE (comp)-[:USES {
   operations: ['READ', 'WRITE'],
   frequency: 'High',
-  description: 'Application Service reads/writes customer data',
-  source: 'architecture'
+  description: 'DataAccessLayer reads/writes customer data',
+  source: 'code'
 }]->(d);
 
-MATCH (c:Container {id: 'CONT-003'}), (d:DataObject {id: 'DATA-012'})
-CREATE (c)-[:USES {
+MATCH (comp:Component {id: 'COMP-004'}), (d:DataObject {id: 'DATA-012'})
+CREATE (comp)-[:USES {
   operations: ['READ', 'WRITE'],
   frequency: 'High',
-  description: 'Application Service manages application records',
-  source: 'architecture'
+  description: 'DataAccessLayer manages application records',
+  source: 'code'
 }]->(d);
 
-MATCH (c:Container {id: 'CONT-004'}), (d:DataObject {id: 'DATA-345'})
-CREATE (c)-[:USES {
+MATCH (comp:Component {id: 'COMP-007'}), (d:DataObject {id: 'DATA-345'})
+CREATE (comp)-[:USES {
   operations: ['READ', 'WRITE'],
   frequency: 'High',
-  description: 'Document Service stores and retrieves documents',
-  source: 'architecture'
+  description: 'StorageManager handles document storage and retrieval',
+  source: 'code'
 }]->(d);
 
+// Containers → Data Objects (Only for storage containers without components)
 MATCH (c:Container {id: 'CONT-005'}), (d:DataObject {id: 'DATA-789'})
 CREATE (c)-[:STORES {
   description: 'PostgreSQL database physically stores customer data',
@@ -538,6 +730,66 @@ CREATE (c)-[:DEPLOYED_ON {
   source: 'architecture'
 }]->(s);
 
+// AppChange → BusinessCapability, Component, DataObject (only modify and add/enable)
+// AC-001: Add MFA capability
+MATCH (ac:AppChange {id: 'AC-001'}), (bc:BusinessCapability {id: 'BC-001'})
+CREATE (ac)-[:ADDS {
+  description: 'Adding multi-factor authentication enhances Customer Authentication capability',
+  impact: 'High',
+  source: 'change-management'
+}]->(bc);
+
+MATCH (ac:AppChange {id: 'AC-001'}), (comp:Component {id: 'COMP-002'})
+CREATE (ac)-[:ADDS {
+  description: 'ValidationService will gain MFA validation logic',
+  impact: 'High',
+  source: 'change-management'
+}]->(comp);
+
+// AC-002: Modify validation rules
+MATCH (ac:AppChange {id: 'AC-002'}), (bc:BusinessCapability {id: 'BC-002'})
+CREATE (ac)-[:MODIFIES {
+  description: 'Updating validation rules to support new application types',
+  impact: 'Medium',
+  source: 'change-management'
+}]->(bc);
+
+MATCH (ac:AppChange {id: 'AC-002'}), (comp:Component {id: 'COMP-002'})
+CREATE (ac)-[:MODIFIES {
+  description: 'ValidationService business rules will be modified',
+  impact: 'Medium',
+  source: 'change-management'
+}]->(comp);
+
+MATCH (ac:AppChange {id: 'AC-002'}), (d:DataObject {id: 'DATA-012'})
+CREATE (ac)-[:MODIFIES {
+  description: 'ApplicationTable schema may need updates for new validation fields',
+  impact: 'Low',
+  source: 'change-management'
+}]->(d);
+
+// AC-003: Enable document versioning
+MATCH (ac:AppChange {id: 'AC-003'}), (bc:BusinessCapability {id: 'BC-003'})
+CREATE (ac)-[:ENABLES {
+  description: 'Enabling version control for Document Management capability',
+  impact: 'Medium',
+  source: 'change-management'
+}]->(bc);
+
+MATCH (ac:AppChange {id: 'AC-003'}), (comp:Component {id: 'COMP-007'})
+CREATE (ac)-[:ENABLES {
+  description: 'StorageManager will enable versioning features',
+  impact: 'Medium',
+  source: 'change-management'
+}]->(comp);
+
+MATCH (ac:AppChange {id: 'AC-003'}), (d:DataObject {id: 'DATA-345'})
+CREATE (ac)-[:ENABLES {
+  description: 'DocumentStorage will support version metadata',
+  impact: 'Medium',
+  source: 'change-management'
+}]->(d);
+
 // ============================================================================
 // VERIFICATION QUERIES
 // ============================================================================
@@ -574,4 +826,12 @@ MATCH ()-[r:STORES]->() RETURN 'STORES' as Type, count(r) as Count
 UNION
 MATCH ()-[r:DEPLOYED_ON]->() RETURN 'DEPLOYED_ON' as Type, count(r) as Count
 UNION
-MATCH ()-[r:STORED_IN]->() RETURN 'STORED_IN' as Type, count(r) as Count;
+MATCH ()-[r:STORED_IN]->() RETURN 'STORED_IN' as Type, count(r) as Count
+UNION
+MATCH ()-[r:CALLS]->() RETURN 'CALLS' as Type, count(r) as Count
+UNION
+MATCH ()-[r:ADDS]->() RETURN 'ADDS' as Type, count(r) as Count
+UNION
+MATCH ()-[r:MODIFIES]->() RETURN 'MODIFIES' as Type, count(r) as Count
+UNION
+MATCH ()-[r:ENABLES]->() RETURN 'ENABLES' as Type, count(r) as Count;
