@@ -6,39 +6,39 @@
 // ============================================================================
 
 // Requirements
-CREATE CONSTRAINT requirement_id IF NOT EXISTS
+CREATE CONSTRAINT requirement_id
 FOR (r:Requirement) REQUIRE r.id IS UNIQUE;
 
 // Applications
-CREATE CONSTRAINT application_id IF NOT EXISTS
+CREATE CONSTRAINT application_id
 FOR (a:Application) REQUIRE a.id IS UNIQUE;
 
 // Data Objects
-CREATE CONSTRAINT data_object_id IF NOT EXISTS
+CREATE CONSTRAINT data_object_id
 FOR (d:DataObject) REQUIRE d.id IS UNIQUE;
 
 // Business Capabilities
-CREATE CONSTRAINT capability_id IF NOT EXISTS
+CREATE CONSTRAINT capability_id
 FOR (c:BusinessCapability) REQUIRE c.id IS UNIQUE;
 
 // Components
-CREATE CONSTRAINT component_id IF NOT EXISTS
+CREATE CONSTRAINT component_id
 FOR (c:Component) REQUIRE c.id IS UNIQUE;
 
 // Containers (C4 Model)
-CREATE CONSTRAINT container_id IF NOT EXISTS
+CREATE CONSTRAINT container_id
 FOR (c:Container) REQUIRE c.id IS UNIQUE;
 
 // Servers
-CREATE CONSTRAINT server_id IF NOT EXISTS
+CREATE CONSTRAINT server_id
 FOR (s:Server) REQUIRE s.id IS UNIQUE;
 
 // Application Changes
-CREATE CONSTRAINT app_change_id IF NOT EXISTS
+CREATE CONSTRAINT app_change_id
 FOR (ac:AppChange) REQUIRE ac.id IS UNIQUE;
 
 // Infrastructure Changes
-CREATE CONSTRAINT infra_change_id IF NOT EXISTS
+CREATE CONSTRAINT infra_change_id
 FOR (ic:InfraChange) REQUIRE ic.id IS UNIQUE;
 
 // ============================================================================
@@ -46,29 +46,29 @@ FOR (ic:InfraChange) REQUIRE ic.id IS UNIQUE;
 // ============================================================================
 
 // Text search indexes
-CREATE INDEX requirement_name IF NOT EXISTS
+CREATE INDEX requirement_name
 FOR (r:Requirement) ON (r.name);
 
-CREATE INDEX application_name IF NOT EXISTS
+CREATE INDEX application_name
 FOR (a:Application) ON (a.name);
 
-CREATE INDEX data_object_name IF NOT EXISTS
+CREATE INDEX data_object_name
 FOR (d:DataObject) ON (d.name);
 
 // Property indexes for filtering
-CREATE INDEX application_lifecycle IF NOT EXISTS
+CREATE INDEX application_lifecycle
 FOR (a:Application) ON (a.lifecycle);
 
-CREATE INDEX requirement_priority IF NOT EXISTS
+CREATE INDEX requirement_priority
 FOR (r:Requirement) ON (r.priority);
 
-CREATE INDEX data_object_sensitivity IF NOT EXISTS
+CREATE INDEX data_object_sensitivity
 FOR (d:DataObject) ON (d.sensitivity);
 
-CREATE INDEX capability_criticality IF NOT EXISTS
+CREATE INDEX capability_criticality
 FOR (c:BusinessCapability) ON (c.criticality);
 
-CREATE INDEX capability_level IF NOT EXISTS
+CREATE INDEX capability_level
 FOR (c:BusinessCapability) ON (c.level);
 
 // ============================================================================
@@ -76,30 +76,30 @@ FOR (c:BusinessCapability) ON (c.level);
 // ============================================================================
 
 // Name indexes for missing node types
-CREATE INDEX component_name IF NOT EXISTS
+CREATE INDEX component_name
 FOR (c:Component) ON (c.name);
 
-CREATE INDEX container_name IF NOT EXISTS
+CREATE INDEX container_name
 FOR (c:Container) ON (c.name);
 
-CREATE INDEX server_name IF NOT EXISTS
+CREATE INDEX server_name
 FOR (s:Server) ON (s.name);
 
-CREATE INDEX app_change_name IF NOT EXISTS
+CREATE INDEX app_change_name
 FOR (ac:AppChange) ON (ac.name);
 
-CREATE INDEX infra_change_name IF NOT EXISTS
+CREATE INDEX infra_change_name
 FOR (ic:InfraChange) ON (ic.name);
 
-CREATE INDEX business_capability_name IF NOT EXISTS
+CREATE INDEX business_capability_name
 FOR (bc:BusinessCapability) ON (bc.name);
 
 // Compliance & Security (15+ queries)
-CREATE INDEX requirement_compliance IF NOT EXISTS
+CREATE INDEX requirement_compliance
 FOR (r:Requirement) ON (r.compliance);
 
 // Environment & Deployment (20+ queries)
-CREATE INDEX server_environment IF NOT EXISTS
+CREATE INDEX server_environment
 FOR (s:Server) ON (s.environment);
 
 // ============================================================================
@@ -107,45 +107,45 @@ FOR (s:Server) ON (s.environment);
 // ============================================================================
 
 // Change Management
-CREATE INDEX app_change_status IF NOT EXISTS
+CREATE INDEX app_change_status
 FOR (ac:AppChange) ON (ac.status);
 
-CREATE INDEX app_change_priority IF NOT EXISTS
+CREATE INDEX app_change_priority
 FOR (ac:AppChange) ON (ac.priority);
 
-CREATE INDEX infra_change_status IF NOT EXISTS
+CREATE INDEX infra_change_status
 FOR (ic:InfraChange) ON (ic.status);
 
-CREATE INDEX infra_change_priority IF NOT EXISTS
+CREATE INDEX infra_change_priority
 FOR (ic:InfraChange) ON (ic.priority);
 
-CREATE INDEX requirement_status IF NOT EXISTS
+CREATE INDEX requirement_status
 FOR (r:Requirement) ON (r.status);
 
 // Technology & Type
-CREATE INDEX component_technology IF NOT EXISTS
+CREATE INDEX component_technology
 FOR (c:Component) ON (c.technology);
 
-CREATE INDEX component_type IF NOT EXISTS
+CREATE INDEX component_type
 FOR (c:Component) ON (c.type);
 
-CREATE INDEX container_technology IF NOT EXISTS
+CREATE INDEX container_technology
 FOR (c:Container) ON (c.technology);
 
-CREATE INDEX container_type IF NOT EXISTS
+CREATE INDEX container_type
 FOR (c:Container) ON (c.type);
 
-CREATE INDEX application_type IF NOT EXISTS
+CREATE INDEX application_type
 FOR (a:Application) ON (a.type);
 
-CREATE INDEX data_object_type IF NOT EXISTS
+CREATE INDEX data_object_type
 FOR (d:DataObject) ON (d.type);
 
 // Business Value
-CREATE INDEX application_business_value IF NOT EXISTS
+CREATE INDEX application_business_value
 FOR (a:Application) ON (a.businessValue);
 
-CREATE INDEX business_capability_maturity IF NOT EXISTS
+CREATE INDEX business_capability_maturity
 FOR (bc:BusinessCapability) ON (bc.maturity);
 
 // ============================================================================
@@ -153,22 +153,22 @@ FOR (bc:BusinessCapability) ON (bc.maturity);
 // ============================================================================
 
 // Application filtering
-CREATE INDEX application_lifecycle_value IF NOT EXISTS
+CREATE INDEX application_lifecycle_value
 FOR (a:Application) ON (a.lifecycle, a.businessValue);
 
 // Compliance scoping
-CREATE INDEX data_object_sensitivity_app IF NOT EXISTS
+CREATE INDEX data_object_sensitivity_app
 FOR (d:DataObject) ON (d.sensitivity, d.application);
 
 // Change management
-CREATE INDEX app_change_status_priority IF NOT EXISTS
+CREATE INDEX app_change_status_priority
 FOR (ac:AppChange) ON (ac.status, ac.priority);
 
-CREATE INDEX infra_change_status_priority IF NOT EXISTS
+CREATE INDEX infra_change_status_priority
 FOR (ic:InfraChange) ON (ic.status, ic.priority);
 
 // Server deployment
-CREATE INDEX server_env_purpose IF NOT EXISTS
+CREATE INDEX server_env_purpose
 FOR (s:Server) ON (s.environment, s.purpose);
 
 // Full-text search indexes (all entity types)
@@ -179,7 +179,7 @@ CALL db.index.fulltext.createNodeIndex(
     'Component', 'Container', 'Server', 'AppChange', 'InfraChange'
   ],
   ['name', 'description']
-) IF NOT EXISTS;
+);
 
 // ============================================================================
 // SAMPLE DATA - Initial dataset for POC
