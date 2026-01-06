@@ -38,6 +38,3 @@ done
 echo "========================================="
 echo "✓ Database initialization complete!"
 echo "========================================="
-
-# Create marker file to indicate initialization is complete
-touch /docker-entrypoint-initdb.d/.initialized
