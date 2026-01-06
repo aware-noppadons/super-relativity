@@ -13,25 +13,9 @@ FOR (r:Requirement) REQUIRE r.id IS UNIQUE;
 CREATE CONSTRAINT application_id IF NOT EXISTS
 FOR (a:Application) REQUIRE a.id IS UNIQUE;
 
-// Code Components
-CREATE CONSTRAINT code_component_id IF NOT EXISTS
-FOR (c:CodeComponent) REQUIRE c.id IS UNIQUE;
-
 // Data Objects
 CREATE CONSTRAINT data_object_id IF NOT EXISTS
 FOR (d:DataObject) REQUIRE d.id IS UNIQUE;
-
-// Infrastructure
-CREATE CONSTRAINT infrastructure_id IF NOT EXISTS
-FOR (i:Infrastructure) REQUIRE i.id IS UNIQUE;
-
-// Repositories
-CREATE CONSTRAINT repository_url IF NOT EXISTS
-FOR (r:Repository) REQUIRE r.url IS UNIQUE;
-
-// Diagrams
-CREATE CONSTRAINT diagram_id IF NOT EXISTS
-FOR (d:Diagram) REQUIRE d.id IS UNIQUE;
 
 // Business Capabilities
 CREATE CONSTRAINT capability_id IF NOT EXISTS
@@ -40,6 +24,10 @@ FOR (c:BusinessCapability) REQUIRE c.id IS UNIQUE;
 // Components
 CREATE CONSTRAINT component_id IF NOT EXISTS
 FOR (c:Component) REQUIRE c.id IS UNIQUE;
+
+// Containers (C4 Model)
+CREATE CONSTRAINT container_id IF NOT EXISTS
+FOR (c:Container) REQUIRE c.id IS UNIQUE;
 
 // Servers
 CREATE CONSTRAINT server_id IF NOT EXISTS
@@ -53,22 +41,6 @@ FOR (ac:AppChange) REQUIRE ac.id IS UNIQUE;
 CREATE CONSTRAINT infra_change_id IF NOT EXISTS
 FOR (ic:InfraChange) REQUIRE ic.id IS UNIQUE;
 
-// Code Files
-CREATE CONSTRAINT code_file_path IF NOT EXISTS
-FOR (cf:CodeFile) REQUIRE cf.path IS UNIQUE;
-
-// Functions (composite constraint)
-CREATE CONSTRAINT function_composite IF NOT EXISTS
-FOR (f:Function) REQUIRE (f.name, f.filePath) IS UNIQUE;
-
-// Diagram Entities
-CREATE CONSTRAINT diagram_entity_id IF NOT EXISTS
-FOR (de:DiagramEntity) REQUIRE de.id IS UNIQUE;
-
-// Modules
-CREATE CONSTRAINT module_name IF NOT EXISTS
-FOR (m:Module) REQUIRE m.name IS UNIQUE;
-
 // ============================================================================
 // INDEXES - Improve query performance
 // ============================================================================
@@ -79,9 +51,6 @@ FOR (r:Requirement) ON (r.name);
 
 CREATE INDEX application_name IF NOT EXISTS
 FOR (a:Application) ON (a.name);
-
-CREATE INDEX code_component_name IF NOT EXISTS
-FOR (c:CodeComponent) ON (c.name);
 
 CREATE INDEX data_object_name IF NOT EXISTS
 FOR (d:DataObject) ON (d.name);
@@ -110,6 +79,9 @@ FOR (c:BusinessCapability) ON (c.level);
 CREATE INDEX component_name IF NOT EXISTS
 FOR (c:Component) ON (c.name);
 
+CREATE INDEX container_name IF NOT EXISTS
+FOR (c:Container) ON (c.name);
+
 CREATE INDEX server_name IF NOT EXISTS
 FOR (s:Server) ON (s.name);
 
@@ -118,9 +90,6 @@ FOR (ac:AppChange) ON (ac.name);
 
 CREATE INDEX infra_change_name IF NOT EXISTS
 FOR (ic:InfraChange) ON (ic.name);
-
-CREATE INDEX infrastructure_name IF NOT EXISTS
-FOR (i:Infrastructure) ON (i.name);
 
 CREATE INDEX business_capability_name IF NOT EXISTS
 FOR (bc:BusinessCapability) ON (bc.name);
@@ -132,12 +101,6 @@ FOR (r:Requirement) ON (r.compliance);
 // Environment & Deployment (20+ queries)
 CREATE INDEX server_environment IF NOT EXISTS
 FOR (s:Server) ON (s.environment);
-
-CREATE INDEX infrastructure_environment IF NOT EXISTS
-FOR (i:Infrastructure) ON (i.environment);
-
-CREATE INDEX infrastructure_criticality IF NOT EXISTS
-FOR (i:Infrastructure) ON (i.criticality);
 
 // ============================================================================
 // TIER 2 IMPORTANT INDEXES - Moderate-frequency properties (10+ queries)
@@ -166,11 +129,14 @@ FOR (c:Component) ON (c.technology);
 CREATE INDEX component_type IF NOT EXISTS
 FOR (c:Component) ON (c.type);
 
+CREATE INDEX container_technology IF NOT EXISTS
+FOR (c:Container) ON (c.technology);
+
+CREATE INDEX container_type IF NOT EXISTS
+FOR (c:Container) ON (c.type);
+
 CREATE INDEX application_type IF NOT EXISTS
 FOR (a:Application) ON (a.type);
-
-CREATE INDEX code_file_language IF NOT EXISTS
-FOR (cf:CodeFile) ON (cf.language);
 
 CREATE INDEX data_object_type IF NOT EXISTS
 FOR (d:DataObject) ON (d.type);
@@ -201,10 +167,7 @@ FOR (ac:AppChange) ON (ac.status, ac.priority);
 CREATE INDEX infra_change_status_priority IF NOT EXISTS
 FOR (ic:InfraChange) ON (ic.status, ic.priority);
 
-// Infrastructure deployment
-CREATE INDEX infrastructure_env_criticality IF NOT EXISTS
-FOR (i:Infrastructure) ON (i.environment, i.criticality);
-
+// Server deployment
 CREATE INDEX server_env_purpose IF NOT EXISTS
 FOR (s:Server) ON (s.environment, s.purpose);
 
@@ -212,9 +175,8 @@ FOR (s:Server) ON (s.environment, s.purpose);
 CALL db.index.fulltext.createNodeIndex(
   'searchAllEntities',
   [
-    'Requirement', 'Application', 'CodeComponent', 'DataObject',
-    'Infrastructure', 'BusinessCapability', 'Component', 'Server',
-    'AppChange', 'InfraChange', 'Diagram', 'DiagramEntity'
+    'Requirement', 'Application', 'DataObject', 'BusinessCapability',
+    'Component', 'Container', 'Server', 'AppChange', 'InfraChange'
   ],
   ['name', 'description']
 ) IF NOT EXISTS;
@@ -343,92 +305,88 @@ CREATE (d3:DataObject {
   source: 'leanix'
 });
 
-// Sample Code Components
-CREATE (c1:CodeComponent {
-  id: 'CODE-001',
-  name: 'ApplicationSubmissionService',
-  type: 'Class',
-  language: 'Java',
-  repository: 'github.com/org/app-processing-api',
-  filePath: '/src/main/java/com/company/services/ApplicationSubmissionService.java',
-  startLine: 15,
-  endLine: 234,
-  complexity: 12,
-  lastModified: datetime('2025-12-10'),
-  lastAuthor: 'john.doe@company.com',
-  source: 'code-parser'
+// Sample Containers (C4 Model)
+CREATE (cont1:Container {
+  id: 'CONT-001',
+  name: 'React Frontend',
+  type: 'Single-Page Application',
+  technology: 'React 18',
+  description: 'Customer-facing web application for application submission and tracking',
+  responsibilities: ['User authentication', 'Application submission forms', 'Status tracking UI', 'Document upload interface'],
+  communicationProtocol: 'HTTPS/REST',
+  port: 3000,
+  deployment: 'Containerized (Docker)',
+  scaling: 'Horizontal',
+  source: 'architecture'
 })
 
-CREATE (c2:CodeComponent {
-  id: 'CODE-002',
-  name: 'submitApplication',
-  type: 'Method',
-  language: 'Java',
-  repository: 'github.com/org/app-processing-api',
-  filePath: '/src/main/java/com/company/services/ApplicationSubmissionService.java',
-  startLine: 45,
-  endLine: 89,
-  complexity: 8,
-  lastModified: datetime('2025-12-10'),
-  lastAuthor: 'john.doe@company.com',
-  source: 'code-parser'
+CREATE (cont2:Container {
+  id: 'CONT-002',
+  name: 'API Gateway',
+  type: 'API Gateway',
+  technology: 'Node.js 20 / Express',
+  description: 'Backend API gateway routing requests to microservices',
+  responsibilities: ['Request routing', 'Authentication/Authorization', 'Rate limiting', 'API composition'],
+  communicationProtocol: 'HTTPS/REST',
+  port: 8080,
+  deployment: 'Containerized (Docker)',
+  scaling: 'Horizontal',
+  source: 'architecture'
 })
 
-CREATE (c3:CodeComponent {
-  id: 'CODE-003',
-  name: 'validateCustomer',
-  type: 'Method',
-  language: 'Java',
-  repository: 'github.com/org/app-processing-api',
-  filePath: '/src/main/java/com/company/services/ApplicationSubmissionService.java',
-  startLine: 91,
-  endLine: 125,
-  complexity: 6,
-  lastModified: datetime('2025-12-05'),
-  lastAuthor: 'jane.smith@company.com',
-  source: 'code-parser'
-});
-
-// Sample Infrastructure
-CREATE (i1:Infrastructure {
-  id: 'SERVER-001',
-  name: 'customer-portal-prod-01',
-  type: 'EC2 Instance',
-  provider: 'AWS',
-  region: 'us-east-1',
-  instanceType: 't3.large',
-  cpu: 2,
-  memoryGB: 8,
-  status: 'Running',
-  costMonthly: 150,
-  source: 'infrastructure-discovery'
+CREATE (cont3:Container {
+  id: 'CONT-003',
+  name: 'Application Service',
+  type: 'Microservice',
+  technology: 'Java 17 / Spring Boot 3',
+  description: 'Core application processing microservice',
+  responsibilities: ['Application validation', 'Business logic processing', 'Workflow orchestration', 'Status management'],
+  communicationProtocol: 'HTTPS/REST',
+  port: 8081,
+  deployment: 'Containerized (Docker)',
+  scaling: 'Horizontal',
+  source: 'architecture'
 })
 
-CREATE (i2:Infrastructure {
-  id: 'SERVER-002',
-  name: 'app-api-prod-01',
-  type: 'EC2 Instance',
-  provider: 'AWS',
-  region: 'us-east-1',
-  instanceType: 't3.xlarge',
-  cpu: 4,
-  memoryGB: 16,
-  status: 'Running',
-  costMonthly: 300,
-  source: 'infrastructure-discovery'
+CREATE (cont4:Container {
+  id: 'CONT-004',
+  name: 'Document Service',
+  type: 'Microservice',
+  technology: 'Python 3.11 / FastAPI',
+  description: 'Document management and storage microservice',
+  responsibilities: ['Document upload', 'Document retrieval', 'Format conversion', 'Encryption/Decryption'],
+  communicationProtocol: 'HTTPS/REST',
+  port: 8082,
+  deployment: 'Containerized (Docker)',
+  scaling: 'Horizontal',
+  source: 'architecture'
 })
 
-CREATE (i3:Infrastructure {
-  id: 'DB-001',
-  name: 'customer-db-prod',
-  type: 'RDS PostgreSQL',
-  provider: 'AWS',
-  region: 'us-east-1',
-  instanceType: 'db.r5.large',
-  storage: 500,
-  status: 'Available',
-  costMonthly: 450,
-  source: 'infrastructure-discovery'
+CREATE (cont5:Container {
+  id: 'CONT-005',
+  name: 'PostgreSQL Database',
+  type: 'Database',
+  technology: 'PostgreSQL 15',
+  description: 'Relational database for customer and application data',
+  responsibilities: ['Data persistence', 'ACID transactions', 'Query processing', 'Data integrity'],
+  communicationProtocol: 'PostgreSQL Wire Protocol',
+  port: 5432,
+  deployment: 'Managed Service (AWS RDS)',
+  scaling: 'Vertical',
+  source: 'architecture'
+})
+
+CREATE (cont6:Container {
+  id: 'CONT-006',
+  name: 'S3 Document Store',
+  type: 'Object Storage',
+  technology: 'AWS S3',
+  description: 'Object storage for document files',
+  responsibilities: ['Document storage', 'Versioning', 'Encryption at rest', 'Lifecycle management'],
+  communicationProtocol: 'HTTPS/S3 API',
+  deployment: 'Managed Service (AWS S3)',
+  scaling: 'Auto-scaling',
+  source: 'architecture'
 });
 
 // ============================================================================
@@ -448,26 +406,6 @@ CREATE (r)-[:IMPLEMENTED_BY {confidence: 1.0, source: 'leanix'}]->(a);
 MATCH (r:Requirement {id: 'REQ-003'}), (a:Application {id: 'APP-789'})
 CREATE (r)-[:IMPLEMENTED_BY {confidence: 1.0, source: 'leanix'}]->(a);
 
-// Applications → Code Components
-MATCH (a:Application {id: 'APP-456'}), (c:CodeComponent {id: 'CODE-001'})
-CREATE (a)-[:CONTAINS]->(c);
-
-MATCH (c1:CodeComponent {id: 'CODE-001'}), (c2:CodeComponent {id: 'CODE-002'})
-CREATE (c1)-[:CONTAINS]->(c2);
-
-MATCH (c1:CodeComponent {id: 'CODE-001'}), (c3:CodeComponent {id: 'CODE-003'})
-CREATE (c1)-[:CONTAINS]->(c3);
-
-// Code → Data Objects
-MATCH (c:CodeComponent {id: 'CODE-002'}), (d:DataObject {id: 'DATA-789'})
-CREATE (c)-[:USES {operations: ['READ'], frequency: 'High', source: 'code-parser'}]->(d);
-
-MATCH (c:CodeComponent {id: 'CODE-002'}), (d:DataObject {id: 'DATA-012'})
-CREATE (c)-[:USES {operations: ['WRITE'], frequency: 'High', source: 'code-parser'}]->(d);
-
-MATCH (c:CodeComponent {id: 'CODE-003'}), (d:DataObject {id: 'DATA-789'})
-CREATE (c)-[:USES {operations: ['READ'], frequency: 'Medium', source: 'code-parser'}]->(d);
-
 // Applications → Data Objects (high-level)
 MATCH (a:Application {id: 'APP-123'}), (d:DataObject {id: 'DATA-789'})
 CREATE (a)-[:USES {operations: ['READ', 'WRITE'], source: 'leanix'}]->(d);
@@ -478,19 +416,126 @@ CREATE (a)-[:USES {operations: ['READ', 'WRITE'], source: 'leanix'}]->(d);
 MATCH (a:Application {id: 'APP-789'}), (d:DataObject {id: 'DATA-345'})
 CREATE (a)-[:USES {operations: ['READ', 'WRITE'], source: 'leanix'}]->(d);
 
-// Applications → Infrastructure
-MATCH (a:Application {id: 'APP-123'}), (i:Infrastructure {id: 'SERVER-001'})
-CREATE (a)-[:DEPLOYED_ON {environment: 'production'}]->(i);
+// Applications → Containers (C4 Model Layer)
+MATCH (a:Application {id: 'APP-123'}), (c:Container {id: 'CONT-001'})
+CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
 
-MATCH (a:Application {id: 'APP-456'}), (i:Infrastructure {id: 'SERVER-002'})
-CREATE (a)-[:DEPLOYED_ON {environment: 'production'}]->(i);
+MATCH (a:Application {id: 'APP-123'}), (c:Container {id: 'CONT-002'})
+CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
 
-// Data Objects → Infrastructure
-MATCH (d:DataObject {id: 'DATA-789'}), (i:Infrastructure {id: 'DB-001'})
-CREATE (d)-[:STORED_IN]->(i);
+MATCH (a:Application {id: 'APP-456'}), (c:Container {id: 'CONT-003'})
+CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
 
-MATCH (d:DataObject {id: 'DATA-012'}), (i:Infrastructure {id: 'DB-001'})
-CREATE (d)-[:STORED_IN]->(i);
+MATCH (a:Application {id: 'APP-789'}), (c:Container {id: 'CONT-004'})
+CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
+
+// Container inter-communication
+MATCH (c1:Container {id: 'CONT-001'}), (c2:Container {id: 'CONT-002'})
+CREATE (c1)-[:COMMUNICATES_WITH {
+  protocol: 'HTTPS/REST',
+  synchronous: true,
+  description: 'Frontend calls API Gateway for all backend operations',
+  source: 'architecture'
+}]->(c2);
+
+MATCH (c1:Container {id: 'CONT-002'}), (c2:Container {id: 'CONT-003'})
+CREATE (c1)-[:COMMUNICATES_WITH {
+  protocol: 'HTTPS/REST',
+  synchronous: true,
+  description: 'API Gateway routes application requests to Application Service',
+  source: 'architecture'
+}]->(c2);
+
+MATCH (c1:Container {id: 'CONT-002'}), (c2:Container {id: 'CONT-004'})
+CREATE (c1)-[:COMMUNICATES_WITH {
+  protocol: 'HTTPS/REST',
+  synchronous: true,
+  description: 'API Gateway routes document requests to Document Service',
+  source: 'architecture'
+}]->(c2);
+
+MATCH (c1:Container {id: 'CONT-003'}), (c2:Container {id: 'CONT-004'})
+CREATE (c1)-[:COMMUNICATES_WITH {
+  protocol: 'HTTPS/REST',
+  synchronous: true,
+  description: 'Application Service requests document validation from Document Service',
+  source: 'architecture'
+}]->(c2);
+
+// Containers → Data Objects
+MATCH (c:Container {id: 'CONT-003'}), (d:DataObject {id: 'DATA-789'})
+CREATE (c)-[:USES {
+  operations: ['READ', 'WRITE'],
+  frequency: 'High',
+  description: 'Application Service reads/writes customer data',
+  source: 'architecture'
+}]->(d);
+
+MATCH (c:Container {id: 'CONT-003'}), (d:DataObject {id: 'DATA-012'})
+CREATE (c)-[:USES {
+  operations: ['READ', 'WRITE'],
+  frequency: 'High',
+  description: 'Application Service manages application records',
+  source: 'architecture'
+}]->(d);
+
+MATCH (c:Container {id: 'CONT-004'}), (d:DataObject {id: 'DATA-345'})
+CREATE (c)-[:USES {
+  operations: ['READ', 'WRITE'],
+  frequency: 'High',
+  description: 'Document Service stores and retrieves documents',
+  source: 'architecture'
+}]->(d);
+
+MATCH (c:Container {id: 'CONT-005'}), (d:DataObject {id: 'DATA-789'})
+CREATE (c)-[:STORES {
+  description: 'PostgreSQL database physically stores customer data',
+  source: 'architecture'
+}]->(d);
+
+MATCH (c:Container {id: 'CONT-005'}), (d:DataObject {id: 'DATA-012'})
+CREATE (c)-[:STORES {
+  description: 'PostgreSQL database physically stores application data',
+  source: 'architecture'
+}]->(d);
+
+MATCH (c:Container {id: 'CONT-006'}), (d:DataObject {id: 'DATA-345'})
+CREATE (c)-[:STORES {
+  description: 'S3 physically stores document files',
+  source: 'architecture'
+}]->(d);
+
+// Containers → Servers
+MATCH (c:Container {id: 'CONT-001'}), (s:Server {id: 'SRV-001'})
+CREATE (c)-[:DEPLOYED_ON {
+  environment: 'production',
+  replicas: 3,
+  description: 'React Frontend deployed on web server',
+  source: 'architecture'
+}]->(s);
+
+MATCH (c:Container {id: 'CONT-002'}), (s:Server {id: 'SRV-003'})
+CREATE (c)-[:DEPLOYED_ON {
+  environment: 'production',
+  replicas: 2,
+  description: 'API Gateway deployed on API server',
+  source: 'architecture'
+}]->(s);
+
+MATCH (c:Container {id: 'CONT-003'}), (s:Server {id: 'SRV-003'})
+CREATE (c)-[:DEPLOYED_ON {
+  environment: 'production',
+  replicas: 4,
+  description: 'Application Service deployed on API server',
+  source: 'architecture'
+}]->(s);
+
+MATCH (c:Container {id: 'CONT-005'}), (s:Server {id: 'SRV-005'})
+CREATE (c)-[:DEPLOYED_ON {
+  environment: 'production',
+  description: 'PostgreSQL database running on database server',
+  source: 'architecture'
+}]->(s);
 
 // ============================================================================
 // VERIFICATION QUERIES
@@ -501,18 +546,30 @@ MATCH (n:Requirement) RETURN 'Requirements' as Type, count(n) as Count
 UNION
 MATCH (n:Application) RETURN 'Applications' as Type, count(n) as Count
 UNION
-MATCH (n:CodeComponent) RETURN 'Code Components' as Type, count(n) as Count
+MATCH (n:Container) RETURN 'Containers' as Type, count(n) as Count
+UNION
+MATCH (n:Component) RETURN 'Components' as Type, count(n) as Count
 UNION
 MATCH (n:DataObject) RETURN 'Data Objects' as Type, count(n) as Count
 UNION
-MATCH (n:Infrastructure) RETURN 'Infrastructure' as Type, count(n) as Count;
+MATCH (n:Server) RETURN 'Servers' as Type, count(n) as Count
+UNION
+MATCH (n:BusinessCapability) RETURN 'Business Capabilities' as Type, count(n) as Count
+UNION
+MATCH (n:AppChange) RETURN 'Application Changes' as Type, count(n) as Count
+UNION
+MATCH (n:InfraChange) RETURN 'Infrastructure Changes' as Type, count(n) as Count;
 
 // Count relationships by type
 MATCH ()-[r:IMPLEMENTED_BY]->() RETURN 'IMPLEMENTED_BY' as Type, count(r) as Count
 UNION
 MATCH ()-[r:CONTAINS]->() RETURN 'CONTAINS' as Type, count(r) as Count
 UNION
+MATCH ()-[r:COMMUNICATES_WITH]->() RETURN 'COMMUNICATES_WITH' as Type, count(r) as Count
+UNION
 MATCH ()-[r:USES]->() RETURN 'USES' as Type, count(r) as Count
+UNION
+MATCH ()-[r:STORES]->() RETURN 'STORES' as Type, count(r) as Count
 UNION
 MATCH ()-[r:DEPLOYED_ON]->() RETURN 'DEPLOYED_ON' as Type, count(r) as Count
 UNION

@@ -1,0 +1,12 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+System(app2, "Application 2", "Secondary application")
+System_Ext(app1, "Application 1", "Primary application")
+System_Ext(queue, "Message Queue", "RabbitMQ")
+
+Rel(app2, app1, "call API endpoints", "REST")
+Rel(app2, queue, "publish events", "AMQP")
+Rel(app1, queue, "subscribe to events", "AMQP")
+
+@enduml

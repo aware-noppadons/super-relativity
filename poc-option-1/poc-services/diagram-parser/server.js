@@ -3,6 +3,7 @@ const neo4j = require('neo4j-driver');
 const fs = require('fs').promises;
 const path = require('path');
 const { glob } = require('glob');
+const contextDiagramParser = require('./context-diagram-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -53,6 +54,47 @@ app.post('/api/parse/directory', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Parse error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Parse single C4 context diagram
+app.post('/api/parse/context-diagram', async (req, res) => {
+  const { content, fileName } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ error: 'content is required' });
+  }
+
+  try {
+    const parsed = contextDiagramParser.parseContextDiagram(content, fileName || 'unknown.puml');
+
+    const session = neo4jDriver.session();
+    try {
+      const result = await contextDiagramParser.storeContextDiagram(session, parsed);
+      res.json({ ...parsed, ...result });
+    } finally {
+      await session.close();
+    }
+  } catch (error) {
+    console.error('Context diagram parse error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Parse context diagrams from directory
+app.post('/api/parse/context-diagrams', async (req, res) => {
+  const { directoryPath } = req.body;
+
+  if (!directoryPath) {
+    return res.status(400).json({ error: 'directoryPath is required' });
+  }
+
+  try {
+    const result = await parseContextDiagramDirectory(directoryPath);
+    res.json(result);
+  } catch (error) {
+    console.error('Context diagrams parse error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -233,6 +275,60 @@ async function parseDirectory(directoryPath) {
     totalFiles: mermaidFiles.length + plantumlFiles.length,
     mermaidFiles: mermaidFiles.length,
     plantumlFiles: plantumlFiles.length,
+    parsed: results.length,
+    results,
+  };
+}
+
+// Parse context diagrams from directory
+async function parseContextDiagramDirectory(directoryPath) {
+  console.log(`Parsing context diagrams from directory: ${directoryPath}`);
+
+  // Find all MD and PlantUML files
+  const mdFiles = await glob('**/*.md', { cwd: directoryPath });
+  const pumlFiles = await glob('**/*.{puml,plantuml}', { cwd: directoryPath });
+
+  const results = [];
+  const session = neo4jDriver.session();
+
+  try {
+    // Parse MD files that contain PlantUML blocks
+    for (const file of mdFiles) {
+      try {
+        const filePath = path.join(directoryPath, file);
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        // Only process if it contains PlantUML content
+        if (content.includes('@startuml')) {
+          const parsed = contextDiagramParser.parseContextDiagram(content, file);
+          const result = await contextDiagramParser.storeContextDiagram(session, parsed);
+          results.push({ file, ...parsed, ...result });
+        }
+      } catch (error) {
+        console.warn(`Failed to parse ${file}:`, error.message);
+      }
+    }
+
+    // Parse PlantUML files
+    for (const file of pumlFiles) {
+      try {
+        const filePath = path.join(directoryPath, file);
+        const content = await fs.readFile(filePath, 'utf-8');
+        const parsed = contextDiagramParser.parseContextDiagram(content, file);
+        const result = await contextDiagramParser.storeContextDiagram(session, parsed);
+        results.push({ file, ...parsed, ...result });
+      } catch (error) {
+        console.warn(`Failed to parse ${file}:`, error.message);
+      }
+    }
+  } finally {
+    await session.close();
+  }
+
+  return {
+    totalFiles: mdFiles.length + pumlFiles.length,
+    mdFiles: mdFiles.length,
+    pumlFiles: pumlFiles.length,
     parsed: results.length,
     results,
   };
