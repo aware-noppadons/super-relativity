@@ -24,6 +24,7 @@ graph TB
 
     subgraph "Knowledge Graph Layer"
         Neo4j[(Neo4j Graph DB<br/>Ports 7474/7687<br/>Central Truth Store)]
+        Neo4jInit[Neo4j Init<br/>Auto-initialization<br/>Runs once on startup]
         PG[(PostgreSQL<br/>Port 5432<br/>Metadata & Jobs)]
         Redis[(Redis<br/>Port 6379<br/>Cache & Queue)]
     end
@@ -53,6 +54,7 @@ graph TB
     SyncSvc -->|Cypher INSERT| Neo4j
     CodeParser -->|Cypher INSERT| Neo4j
     DiagParser -->|Cypher INSERT| Neo4j
+    Neo4jInit -->|Initialize Schema<br/>Sample Data| Neo4j
 
     %% Graph DB connections
     SyncSvc -->|Job Status| PG
@@ -73,6 +75,7 @@ graph TB
     Neo4j -->|JMX Metrics| Prom
 
     style Neo4j fill:#4287f5,stroke:#333,stroke-width:4px,color:#fff
+    style Neo4jInit fill:#87ceeb,stroke:#333,stroke-width:2px,color:#000
     style GraphQL fill:#e535ab,stroke:#333,stroke-width:2px,color:#fff
     style WebUI fill:#61dafb,stroke:#333,stroke-width:2px
     style LeanIX fill:#ff6b6b,stroke:#333,stroke-width:2px

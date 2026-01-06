@@ -71,6 +71,7 @@ This POC shows how to extend LeanIX with a Neo4j knowledge graph to provide:
 
 ### Supporting Services
 
+- **Neo4j Init** - Automatically initializes Neo4j with schema and sample data on startup
 - **Code Parser** (port 3002) - Analyzes Git repositories
 - **Diagram Parser** (port 3003) - Parses Mermaid/PlantUML diagrams
 - **PostgreSQL** (port 5432) - Metadata storage
