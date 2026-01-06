@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+# Don't exit on error for cypher commands - they may fail if constraints already exist
+set +e
 
 echo "========================================="
 echo "Neo4j Database Initialization Script"
