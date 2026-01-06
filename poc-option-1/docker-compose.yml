@@ -34,6 +34,27 @@ services:
       - super-relativity
 
   # ============================================================================
+  # NEO4J INITIALIZER - Automatically initializes Neo4j with schema and data
+  # ============================================================================
+  neo4j-init:
+    build:
+      context: ./poc-data/neo4j-init
+      dockerfile: Dockerfile
+    container_name: super-relativity-neo4j-init
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=super-relativity-2025
+    volumes:
+      - ./poc-data/neo4j-init:/docker-entrypoint-initdb.d
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - super-relativity
+    restart: "no"  # Only run once
+
+  # ============================================================================
   # POSTGRESQL - Metadata, users, jobs
   # ============================================================================
   postgres:

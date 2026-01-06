@@ -99,6 +99,10 @@ docker-compose up -d
 # Check status:
 docker-compose ps
 
+# Watch Neo4j initialization (automatic):
+docker logs -f super-relativity-neo4j-init
+# Wait for "✓ Database initialization complete!" message
+
 # 4. Access the interfaces
 open http://localhost:7474         # Neo4j Browser
 open http://localhost:3000         # Web UI
@@ -114,17 +118,19 @@ open http://localhost:3100         # Grafana
 
 ## 📊 Sample Data Included
 
-The POC comes preloaded with realistic data:
+The POC comes preloaded with realistic data following the C4 Model architecture:
 
-- **8 Business Capabilities** - L1 and L2 capabilities with criticality and maturity levels
-- **5 Requirements** - Functional and non-functional requirements with compliance tags
-- **10 Applications** - Web apps, APIs, microservices with tech stacks and costs
-- **12 Data Objects** - Tables, S3 buckets, caches with sensitivity classifications
-- **8 Infrastructure Components** - EKS clusters, RDS databases, S3, Load Balancers
-- **4 Context Diagrams** - Customer onboarding flow, architecture, data flow, infrastructure
-- **100+ Relationships** - IMPLEMENTED_BY, USES, DEPLOYED_ON, REQUIRES, etc.
+- **3 Applications** - Customer Portal, Application Processing API, Document Management Service
+- **6 Containers** (C4 Model) - React Frontend, API Gateway, Application Service, Document Service, PostgreSQL Database, S3 Document Store
+- **20 Components** (C4 Model) - Authentication Manager, Form Validator, API Clients, Processors, Storage Managers, etc.
+- **3 Business Capabilities** - L1 and L2 capabilities with criticality and maturity levels
+- **3 Requirements** - Functional and non-functional requirements with compliance tags
+- **3 Data Objects** - CustomerTable, ApplicationTable, DocumentStorage with PII classifications
+- **3 Servers** - Production EKS Cluster, RDS Database, S3 Bucket with deployment details
+- **Sample Context Diagrams** - PlantUML C4 diagrams showing application dependencies
+- **100+ Relationships** - CONTAINS, USES, COMMUNICATES_WITH, DEPLOYED_ON, IMPLEMENTED_BY, etc.
 
-All data represents a realistic e-commerce application processing system.
+All data represents a realistic application processing system following C4 Model best practices.
 
 ---
 
@@ -295,14 +301,25 @@ docker-compose up -d
 
 ### Neo4j won't load data
 
-```bash
-# Check if init scripts ran
-docker-compose logs neo4j | grep -i "init"
+**The `neo4j-init` container automatically initializes the database.** Check the logs:
 
-# Manually run scripts
-docker-compose exec neo4j cypher-shell -u neo4j -p super-relativity-2025 < poc-data/neo4j-init/01-create-schema.cypher
-docker-compose exec neo4j cypher-shell -u neo4j -p super-relativity-2025 < poc-data/neo4j-init/02-import-leanix-data.cypher
+```bash
+# Check initialization logs
+docker logs super-relativity-neo4j-init
+
+# If you see "Database already initialized" but have no data, reset:
+docker-compose down -v  # WARNING: deletes all data
+docker-compose up -d
+
+# Manually re-run initialization if needed
+docker exec super-relativity-neo4j-init /init-db.sh
+
+# Verify data loaded
+docker exec super-relativity-neo4j cypher-shell -u neo4j -p super-relativity-2025 \
+  "MATCH (n) RETURN labels(n)[0] as type, count(*) as count ORDER BY type"
 ```
+
+**For detailed troubleshooting**, see [Neo4j Initialization Guide](poc-data/neo4j-init/README.md)
 
 ### Sync service errors
 
