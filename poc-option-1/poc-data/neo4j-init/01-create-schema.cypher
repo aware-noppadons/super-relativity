@@ -502,6 +502,49 @@ CREATE (comp7:Component {
   source: 'code'
 });
 
+// Sample Server nodes
+CREATE (srv1:Server {
+  id: 'SRV-001',
+  name: 'Web Server Cluster',
+  type: 'Application Server',
+  environment: 'production',
+  provider: 'AWS',
+  region: 'us-east-1',
+  instanceType: 'c5.2xlarge',
+  purpose: 'Frontend hosting',
+  ipAddress: '10.0.1.50',
+  status: 'Active',
+  source: 'infrastructure'
+})
+
+CREATE (srv2:Server {
+  id: 'SRV-003',
+  name: 'API Server Cluster',
+  type: 'Application Server',
+  environment: 'production',
+  provider: 'AWS',
+  region: 'us-east-1',
+  instanceType: 'c5.4xlarge',
+  purpose: 'Backend services',
+  ipAddress: '10.0.2.50',
+  status: 'Active',
+  source: 'infrastructure'
+})
+
+CREATE (srv3:Server {
+  id: 'SRV-005',
+  name: 'Database Server',
+  type: 'Database Server',
+  environment: 'production',
+  provider: 'AWS RDS',
+  region: 'us-east-1',
+  instanceType: 'db.r5.4xlarge',
+  purpose: 'PostgreSQL database',
+  ipAddress: '10.0.3.50',
+  status: 'Active',
+  source: 'infrastructure'
+});
+
 // Sample AppChange nodes (Application Changes)
 CREATE (ac1:AppChange {
   id: 'AC-001',
@@ -540,6 +583,49 @@ CREATE (ac3:AppChange {
   estimatedEffort: '2 weeks',
   plannedDate: date('2025-03-15'),
   source: 'change-management'
+});
+
+// Sample InfraChange nodes (Infrastructure Changes)
+CREATE (ic1:InfraChange {
+  id: 'IC-001',
+  name: 'Upgrade database server',
+  type: 'Upgrade',
+  status: 'Planned',
+  priority: 'High',
+  changeType: 'modify',
+  description: 'Upgrade PostgreSQL server to higher instance type for better performance',
+  estimatedEffort: '1 week',
+  plannedDate: date('2025-02-20'),
+  downtime: '2 hours',
+  source: 'infrastructure-management'
+})
+
+CREATE (ic2:InfraChange {
+  id: 'IC-002',
+  name: 'Add web server capacity',
+  type: 'Scale',
+  status: 'In Progress',
+  priority: 'Medium',
+  changeType: 'add',
+  description: 'Add additional web server instances to handle increased traffic',
+  estimatedEffort: '3 days',
+  plannedDate: date('2025-02-10'),
+  downtime: '0 hours',
+  source: 'infrastructure-management'
+})
+
+CREATE (ic3:InfraChange {
+  id: 'IC-003',
+  name: 'Enable API server auto-scaling',
+  type: 'Enhancement',
+  status: 'Planned',
+  priority: 'Medium',
+  changeType: 'enable',
+  description: 'Enable auto-scaling for API server cluster to handle load variations',
+  estimatedEffort: '1 week',
+  plannedDate: date('2025-03-01'),
+  downtime: '0 hours',
+  source: 'infrastructure-management'
 });
 
 // ============================================================================
@@ -789,6 +875,66 @@ CREATE (ac)-[:ENABLES {
   impact: 'Medium',
   source: 'change-management'
 }]->(d);
+
+// InfraChange → Server, Container (only modify and add/enable)
+// IC-001: Upgrade database server
+MATCH (ic:InfraChange {id: 'IC-001'}), (s:Server {id: 'SRV-005'})
+CREATE (ic)-[:MODIFIES {
+  description: 'Upgrading database server instance type for better performance',
+  impact: 'High',
+  downtime: '2 hours',
+  source: 'infrastructure-management'
+}]->(s);
+
+MATCH (ic:InfraChange {id: 'IC-001'}), (c:Container {id: 'CONT-005'})
+CREATE (ic)-[:MODIFIES {
+  description: 'PostgreSQL container configuration will be updated',
+  impact: 'Medium',
+  downtime: '2 hours',
+  source: 'infrastructure-management'
+}]->(c);
+
+// IC-002: Add web server capacity
+MATCH (ic:InfraChange {id: 'IC-002'}), (s:Server {id: 'SRV-001'})
+CREATE (ic)-[:ADDS {
+  description: 'Adding additional server instances to web server cluster',
+  impact: 'Low',
+  downtime: '0 hours',
+  source: 'infrastructure-management'
+}]->(s);
+
+MATCH (ic:InfraChange {id: 'IC-002'}), (c:Container {id: 'CONT-001'})
+CREATE (ic)-[:ADDS {
+  description: 'More frontend container instances will be deployed',
+  impact: 'Low',
+  downtime: '0 hours',
+  source: 'infrastructure-management'
+}]->(c);
+
+// IC-003: Enable API server auto-scaling
+MATCH (ic:InfraChange {id: 'IC-003'}), (s:Server {id: 'SRV-003'})
+CREATE (ic)-[:ENABLES {
+  description: 'Enabling auto-scaling capability for API server cluster',
+  impact: 'Medium',
+  downtime: '0 hours',
+  source: 'infrastructure-management'
+}]->(s);
+
+MATCH (ic:InfraChange {id: 'IC-003'}), (c:Container {id: 'CONT-002'})
+CREATE (ic)-[:ENABLES {
+  description: 'API Gateway will support dynamic scaling',
+  impact: 'Medium',
+  downtime: '0 hours',
+  source: 'infrastructure-management'
+}]->(c);
+
+MATCH (ic:InfraChange {id: 'IC-003'}), (c:Container {id: 'CONT-003'})
+CREATE (ic)-[:ENABLES {
+  description: 'Application Service will support dynamic scaling',
+  impact: 'Medium',
+  downtime: '0 hours',
+  source: 'infrastructure-management'
+}]->(c);
 
 // ============================================================================
 // VERIFICATION QUERIES
