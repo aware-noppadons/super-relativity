@@ -1,9 +1,9 @@
 // ============================================================================
-// Super Relativity - Sample Data (v2.0)
+// Super Relativity - Sample Data
 // ============================================================================
-// This file creates sample data following the Master Patterns specification.
-// Uses specific relationship types (CALLS, OWNS, EXPOSES, etc.) per v2.0.
-// Reference: MASTER-PATTERNS.md
+// This file creates sample data following MASTER-PATTERNS.md v2.0
+// All relationships use specific relationship types (CALLS, OWNS, EXPOSES, etc.)
+// Reference: MASTER-PATTERNS.md for complete pattern definitions
 // ============================================================================
 
 // ============================================================================
@@ -89,6 +89,7 @@ CREATE (bf1:BusinessFunction {
   maturity: 'Optimized',
   description: 'Manage customer information and relationships',
   owner: 'Customer Operations',
+  application: 'APP-001',
   source: 'sample'
 });
 
@@ -100,6 +101,7 @@ CREATE (bf2:BusinessFunction {
   maturity: 'Managed',
   description: 'Process financial transactions',
   owner: 'Finance Operations',
+  application: 'APP-002',
   source: 'sample'
 });
 
@@ -111,6 +113,7 @@ CREATE (bf3:BusinessFunction {
   maturity: 'Defined',
   description: 'Onboard new customers',
   owner: 'Customer Operations',
+  application: 'APP-001',
   source: 'sample'
 });
 
@@ -135,6 +138,7 @@ CREATE (comp1:Component {
   type: 'Microservice',
   technology: 'Java Spring Boot',
   description: 'Handles customer CRUD operations',
+  application: 'APP-001',
   source: 'sample'
 });
 
@@ -144,6 +148,7 @@ CREATE (comp2:Component {
   type: 'Microservice',
   technology: 'Java Spring Boot',
   description: 'Processes transactions',
+  application: 'APP-002',
   source: 'sample'
 });
 
@@ -153,6 +158,7 @@ CREATE (comp3:Component {
   type: 'Microservice',
   technology: 'Node.js',
   description: 'Sends notifications to customers',
+  application: 'APP-001',
   source: 'sample'
 });
 
@@ -359,7 +365,7 @@ CREATE (ic2:InfraChange {
 });
 
 // ============================================================================
-// RELATIONSHIPS - Following Master Patterns v2.0
+// RELATIONSHIPS - Following MASTER-PATTERNS.md v2.0
 // ============================================================================
 
 // Pattern 1: Application → Application (RELATES)
@@ -373,7 +379,7 @@ CREATE (app2)-[:RELATES {
   description: 'Mobile App shares data with Admin Dashboard'
 }]->(app3);
 
-// Pattern 1: Application → API (CALLS)
+// Pattern 1: Application → API (CALLS with mode and rw)
 MATCH (app1:Application {id: 'APP-001'}), (api1:API {id: 'API-001'})
 CREATE (app1)-[:CALLS {
   mode: 'pulls',
@@ -398,33 +404,33 @@ CREATE (app1)-[:CALLS {
 // Pattern 1: Application → BusinessFunction (OWNS)
 MATCH (app1:Application {id: 'APP-001'}), (bf1:BusinessFunction {id: 'BF-001'})
 CREATE (app1)-[:OWNS {
-  description: 'Customer Portal supports Customer Management'
+  description: 'Customer Portal owns Customer Management'
 }]->(bf1);
 
 MATCH (app2:Application {id: 'APP-002'}), (bf2:BusinessFunction {id: 'BF-002'})
 CREATE (app2)-[:OWNS {
-  description: 'Mobile App supports Transaction Processing'
+  description: 'Mobile App owns Transaction Processing'
 }]->(bf2);
 
 MATCH (app1:Application {id: 'APP-001'}), (bf3:BusinessFunction {id: 'BF-003'})
 CREATE (app1)-[:OWNS {
-  description: 'Customer Portal supports Customer Onboarding'
+  description: 'Customer Portal owns Customer Onboarding'
 }]->(bf3);
 
 // Pattern 1: Application → Component (OWNS)
 MATCH (app1:Application {id: 'APP-001'}), (comp1:Component {id: 'COMP-001'})
 CREATE (app1)-[:OWNS {
-  description: 'Customer Portal contains Customer Service'
+  description: 'Customer Portal owns Customer Service'
 }]->(comp1);
 
 MATCH (app2:Application {id: 'APP-002'}), (comp2:Component {id: 'COMP-002'})
 CREATE (app2)-[:OWNS {
-  description: 'Mobile App contains Transaction Service'
+  description: 'Mobile App owns Transaction Service'
 }]->(comp2);
 
 MATCH (app1:Application {id: 'APP-001'}), (comp3:Component {id: 'COMP-003'})
 CREATE (app1)-[:OWNS {
-  description: 'Customer Portal contains Notification Service'
+  description: 'Customer Portal owns Notification Service'
 }]->(comp3);
 
 // Pattern 2: API → Component (EXPOSES)
@@ -443,7 +449,7 @@ CREATE (api3)-[:EXPOSES {
   description: 'Notification API exposes Notification Service'
 }]->(comp3);
 
-// Pattern 2: API → DataObject (WORKS_ON)
+// Pattern 2: API → DataObject (WORKS_ON with rw)
 MATCH (api1:API {id: 'API-001'}), (data1:DataObject {id: 'DATA-001'})
 CREATE (api1)-[:WORKS_ON {
   rw: 'read-n-writes',
@@ -462,7 +468,7 @@ CREATE (api3)-[:WORKS_ON {
   description: 'Notification API works on Notification data'
 }]->(data3);
 
-// Pattern 2 (Bidirectional): Component → API (CALLS)
+// Pattern 2 (Bidirectional): Component → API (CALLS with mode and rw)
 MATCH (comp1:Component {id: 'COMP-001'}), (api1:API {id: 'API-001'})
 CREATE (comp1)-[:CALLS {
   mode: 'pulls',
@@ -602,7 +608,7 @@ CREATE (ic2)-[:CHANGES {
   description: 'Patching affects app-server-02'
 }]->(srv2);
 
-// Pattern 9: Component → Component (RELATES - uses)
+// Pattern 9: Component → Component (RELATES for uses)
 MATCH (comp1:Component {id: 'COMP-001'}), (comp4:Component {id: 'COMP-004'})
 CREATE (comp1)-[:RELATES {
   description: 'Customer Service uses Authentication Module'
@@ -624,7 +630,7 @@ CREATE (comp1)-[:CONTAINS {
   description: 'Customer Service contains Notification Service module'
 }]->(comp3);
 
-// Pattern 10: Component → DataObject (WORKS_ON)
+// Pattern 10: Component → DataObject (WORKS_ON with rw)
 MATCH (comp1:Component {id: 'COMP-001'}), (data1:DataObject {id: 'DATA-001'})
 CREATE (comp1)-[:WORKS_ON {
   rw: 'read-n-writes',
@@ -655,7 +661,7 @@ CREATE (comp2)-[:WORKS_ON {
   description: 'Transaction Service reads Customer data'
 }]->(data1);
 
-// Pattern 10: BusinessFunction → DataObject (WORKS_ON)
+// Pattern 10: BusinessFunction → DataObject (WORKS_ON with rw)
 MATCH (bf1:BusinessFunction {id: 'BF-001'}), (data1:DataObject {id: 'DATA-001'})
 CREATE (bf1)-[:WORKS_ON {
   rw: 'read-n-writes',
@@ -680,7 +686,7 @@ CREATE (bf4)-[:WORKS_ON {
   description: 'Fraud Detection uses FraudScore data'
 }]->(data4);
 
-// Pattern 11: BusinessFunction → BusinessFunction (RELATES)
+// Pattern 11: BusinessFunction → BusinessFunction (RELATES with mode)
 MATCH (bf1:BusinessFunction {id: 'BF-001'}), (bf3:BusinessFunction {id: 'BF-003'})
 CREATE (bf1)-[:RELATES {
   mode: 'pushes',
@@ -702,32 +708,47 @@ MATCH (n)
 RETURN labels(n)[0] as nodeType, count(*) as count
 ORDER BY nodeType;
 
-// Count all relationships by type
+// Count all relationships by type and pattern
 MATCH (a)-[r]->(b)
-RETURN type(r) as relationshipType,
-       labels(a)[0] + ' → ' + labels(b)[0] as pattern,
+RETURN labels(a)[0] + ' → ' + labels(b)[0] as pattern,
+       type(r) as relationshipType,
        count(*) as count
-ORDER BY relationshipType, pattern;
+ORDER BY pattern, relationshipType;
 
-// Verify relationship properties
-MATCH (a)-[r:CALLS]->(b)
-RETURN 'CALLS' as relType,
-       labels(a)[0] + ' → ' + labels(b)[0] as pattern,
-       count(*) as count,
-       collect(DISTINCT r.mode) as modes,
-       collect(DISTINCT r.rw) as rwPatterns
-ORDER BY pattern;
+// Verify specific relationship types exist (should have counts)
+MATCH ()-[r:CALLS]->()
+RETURN 'CALLS relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:OWNS]->()
+RETURN 'OWNS relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:EXPOSES]->()
+RETURN 'EXPOSES relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:IMPLEMENTS]->()
+RETURN 'IMPLEMENTS relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:INCLUDES]->()
+RETURN 'INCLUDES relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:CHANGES]->()
+RETURN 'CHANGES relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:MATERIALIZES]->()
+RETURN 'MATERIALIZES relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:INSTALLED_ON]->()
+RETURN 'INSTALLED_ON relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:CONTAINS]->()
+RETURN 'CONTAINS relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:RELATES]->()
+RETURN 'RELATES relationships' as check, count(*) as count
+UNION
+MATCH ()-[r:WORKS_ON]->()
+RETURN 'WORKS_ON relationships' as check, count(*) as count;
 
-MATCH (a)-[r:WORKS_ON]->(b)
-RETURN 'WORKS_ON' as relType,
-       labels(a)[0] + ' → ' + labels(b)[0] as pattern,
-       count(*) as count,
-       collect(DISTINCT r.rw) as rwPatterns
-ORDER BY pattern;
-
-MATCH (a)-[r:RELATES]->(b)
-WHERE labels(a)[0] = 'BusinessFunction' AND labels(b)[0] = 'BusinessFunction'
-RETURN 'RELATES (BF→BF)' as relType,
-       count(*) as count,
-       collect(DISTINCT r.mode) as modes
-ORDER BY pattern;
+// Verify no old RELATED_TO relationships exist (should be 0)
+MATCH ()-[r:RELATED_TO]->()
+RETURN 'OLD RELATED_TO (should be 0)' as check, count(*) as count;
