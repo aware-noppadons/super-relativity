@@ -1,0 +1,109 @@
+// Migration: BusinessFunction-DataObject Relationship Simplification
+// Consolidates READ → INQUIRE and CREATE/UPDATE/DEACTIVATE → MODIFY
+// Following CQRS pattern for clear read/write separation
+
+// ============================================================================
+// PHASE 1: Create INQUIRE relationships from READ
+// ============================================================================
+
+// Migrate READ → INQUIRE
+MATCH (bc:BusinessFunction)-[old:READ]->(d:DataObject)
+CREATE (bc)-[:INQUIRE {
+  action: 'read',
+  syncedAt: old.syncedAt,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// ============================================================================
+// PHASE 2: Create MODIFY relationships from CREATE/UPDATE/DEACTIVATE
+// ============================================================================
+
+// Migrate CREATE → MODIFY
+MATCH (bc:BusinessFunction)-[old:CREATE]->(d:DataObject)
+CREATE (bc)-[:MODIFY {
+  action: 'create',
+  syncedAt: old.syncedAt,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// Migrate UPDATE → MODIFY
+MATCH (bc:BusinessFunction)-[old:UPDATE]->(d:DataObject)
+CREATE (bc)-[:MODIFY {
+  action: 'update',
+  syncedAt: old.syncedAt,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// Migrate DEACTIVATE → MODIFY
+MATCH (bc:BusinessFunction)-[old:DEACTIVATE]->(d:DataObject)
+CREATE (bc)-[:MODIFY {
+  action: 'deactivate',
+  syncedAt: old.syncedAt,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// ============================================================================
+// PHASE 3: Verification (before deletion)
+// ============================================================================
+
+// Count old relationships
+MATCH (bc:BusinessFunction)-[r:READ]->(d:DataObject)
+WITH count(r) as readCount
+MATCH (bc:BusinessFunction)-[r:CREATE]->(d:DataObject)
+WITH readCount, count(r) as createCount
+MATCH (bc:BusinessFunction)-[r:UPDATE]->(d:DataObject)
+WITH readCount, createCount, count(r) as updateCount
+MATCH (bc:BusinessFunction)-[r:DEACTIVATE]->(d:DataObject)
+RETURN
+  readCount,
+  createCount,
+  updateCount,
+  count(r) as deactivateCount,
+  (readCount + createCount + updateCount + count(r)) as totalOld;
+
+// Count new relationships
+MATCH (bc:BusinessFunction)-[r:INQUIRE]->(d:DataObject)
+WITH count(r) as inquireCount
+MATCH (bc:BusinessFunction)-[r:MODIFY]->(d:DataObject)
+RETURN
+  inquireCount,
+  count(r) as modifyCount,
+  (inquireCount + count(r)) as totalNew;
+
+// ============================================================================
+// PHASE 4: Delete old relationships (uncomment after verification)
+// ============================================================================
+
+// IMPORTANT: Only run these after verifying counts match above!
+
+// Delete READ relationships
+// MATCH (bc:BusinessFunction)-[r:READ]->(d:DataObject)
+// DELETE r;
+
+// Delete CREATE relationships
+// MATCH (bc:BusinessFunction)-[r:CREATE]->(d:DataObject)
+// DELETE r;
+
+// Delete UPDATE relationships
+// MATCH (bc:BusinessFunction)-[r:UPDATE]->(d:DataObject)
+// DELETE r;
+
+// Delete DEACTIVATE relationships
+// MATCH (bc:BusinessFunction)-[r:DEACTIVATE]->(d:DataObject)
+// DELETE r;
+
+// ============================================================================
+// PHASE 5: Final verification
+// ============================================================================
+
+// Verify only INQUIRE and MODIFY exist
+MATCH (bc:BusinessFunction)-[r]->(d:DataObject)
+RETURN
+  type(r) as relationshipType,
+  r.action as action,
+  count(*) as count
+ORDER BY relationshipType, action;

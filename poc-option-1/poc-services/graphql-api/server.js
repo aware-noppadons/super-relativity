@@ -121,7 +121,7 @@ const schema = buildSchema(`
     impactLevel: String
     riskLevel: String
     components: [String]
-    businessCapabilities: [String]
+    businessFunctions: [String]
     dataObjects: [String]
   }
 
@@ -365,12 +365,12 @@ const root = {
       const result = await session.run(`
         MATCH (ac:AppChange)
         ${whereClause}
-        OPTIONAL MATCH (ac)-[:IMPACTS]->(comp:Component)
-        OPTIONAL MATCH (ac)-[:ENABLES|ENHANCES|IMPACTS]->(bc:BusinessCapability)
-        OPTIONAL MATCH (ac)-[:MODIFIES|READS|MIGRATES]->(do:DataObject)
+        OPTIONAL MATCH (ac)-[r1:CHANGES]->(comp:Component)
+        OPTIONAL MATCH (ac)-[r2:CHANGES]->(bf:BusinessFunction)
+        OPTIONAL MATCH (ac)-[r3:CHANGES]->(do:DataObject)
         RETURN ac,
                collect(DISTINCT comp.id) as components,
-               collect(DISTINCT bc.id) as businessCapabilities,
+               collect(DISTINCT bf.id) as businessFunctions,
                collect(DISTINCT do.id) as dataObjects
         LIMIT 100
       `, params);
@@ -378,7 +378,7 @@ const root = {
       return result.records.map(record => ({
         ...record.get('ac').properties,
         components: record.get('components').filter(id => id),
-        businessCapabilities: record.get('businessCapabilities').filter(id => id),
+        businessFunctions: record.get('businessFunctions').filter(id => id),
         dataObjects: record.get('dataObjects').filter(id => id),
       }));
     } finally {
@@ -391,12 +391,12 @@ const root = {
     try {
       const result = await session.run(`
         MATCH (ac:AppChange {id: $id})
-        OPTIONAL MATCH (ac)-[:IMPACTS]->(comp:Component)
-        OPTIONAL MATCH (ac)-[:ENABLES|ENHANCES|IMPACTS]->(bc:BusinessCapability)
-        OPTIONAL MATCH (ac)-[:MODIFIES|READS|MIGRATES]->(do:DataObject)
+        OPTIONAL MATCH (ac)-[r1:CHANGES]->(comp:Component)
+        OPTIONAL MATCH (ac)-[r2:CHANGES]->(bf:BusinessFunction)
+        OPTIONAL MATCH (ac)-[r3:CHANGES]->(do:DataObject)
         RETURN ac,
                collect(DISTINCT comp.id) as components,
-               collect(DISTINCT bc.id) as businessCapabilities,
+               collect(DISTINCT bf.id) as businessFunctions,
                collect(DISTINCT do.id) as dataObjects
       `, { id });
 
@@ -406,7 +406,7 @@ const root = {
       return {
         ...record.get('ac').properties,
         components: record.get('components').filter(id => id),
-        businessCapabilities: record.get('businessCapabilities').filter(id => id),
+        businessFunctions: record.get('businessFunctions').filter(id => id),
         dataObjects: record.get('dataObjects').filter(id => id),
       };
     } finally {
@@ -438,7 +438,7 @@ const root = {
       const result = await session.run(`
         MATCH (ic:InfraChange)
         ${whereClause}
-        OPTIONAL MATCH (ic)-[:UPGRADES|SCALES|PATCHES|DECOMMISSIONS]->(srv:Server)
+        OPTIONAL MATCH (ic)-[r:CHANGES]->(srv:Server)
         RETURN ic,
                collect(DISTINCT srv.id) as servers
         LIMIT 100
@@ -458,7 +458,7 @@ const root = {
     try {
       const result = await session.run(`
         MATCH (ic:InfraChange {id: $id})
-        OPTIONAL MATCH (ic)-[:UPGRADES|SCALES|PATCHES|DECOMMISSIONS]->(srv:Server)
+        OPTIONAL MATCH (ic)-[r:CHANGES]->(srv:Server)
         RETURN ic,
                collect(DISTINCT srv.id) as servers
       `, { id });
@@ -479,35 +479,50 @@ const root = {
   hierarchicalGraph: async ({ rootName, rootType }) => {
     const session = neo4jDriver.session();
     try {
-      // Query to get hierarchical structure similar to the Cypher example
-      // BusinessCapability -> DataObject -> Component/BusinessCapability -> Server
+      // Query to get hierarchical structure using variable-length paths
+      // Uses specific relationship types per MASTER-PATTERNS.md
       const result = await session.run(`
         MATCH (root {name: $rootName})
         WHERE $rootType IN labels(root)
 
-        // Get DataObjects connected to root
-        OPTIONAL MATCH (root)-[r1]-(do:DataObject)
+        // Get all nodes within 3 hops using allowed relationship types
+        OPTIONAL MATCH path = (root)-[r:WORKS_ON|IMPLEMENTS|RELATES|INSTALLED_ON|CHANGES|CALLS|OWNS|EXPOSES|MATERIALIZES|INCLUDES|CONTAINS*1..3]-(connected)
 
-        // Get Components and BusinessCapabilities connected to DataObjects
-        OPTIONAL MATCH (do)-[r2]-(dep)
-        WHERE dep:Component OR dep:BusinessCapability
+        WITH root,
+             collect(DISTINCT {
+               path: path,
+               node: connected,
+               distance: length(path)
+             }) as connectedNodes
 
-        // Get Servers connected to Components
-        OPTIONAL MATCH (dep)-[r3]-(srv:Server)
+        // Extract nodes and relationships from paths
+        UNWIND connectedNodes as cn
+
+        WITH root,
+             collect(DISTINCT {node: cn.node, level: cn.distance}) as nodes,
+             [p in connectedNodes WHERE p.path IS NOT NULL | p.path] as paths
+
+        // Extract all relationships from paths
+        UNWIND paths as path
+        UNWIND relationships(path) as rel
 
         RETURN root,
-               collect(DISTINCT {node: do, rel: r1, level: 1}) as dataObjects,
-               collect(DISTINCT {node: dep, rel: r2, level: 2}) as dependants,
-               collect(DISTINCT {node: srv, rel: r3, level: 3}) as servers
+               nodes,
+               collect(DISTINCT {
+                 rel: rel,
+                 start: startNode(rel),
+                 end: endNode(rel)
+               }) as edges
       `, { rootName, rootType });
 
       if (result.records.length === 0) {
         return { nodes: [], edges: [] };
       }
 
-      const nodes = [];
-      const edges = [];
+      const graphNodes = [];
+      const graphEdges = [];
       const nodeIds = new Set();
+      const edgeIds = new Set();
 
       const record = result.records[0];
       const root = record.get('root');
@@ -515,9 +530,9 @@ const root = {
       // Add root node (level 0)
       if (root) {
         const rootId = root.identity.toString();
-        nodes.push({
+        graphNodes.push({
           id: rootId,
-          label: root.properties.name,
+          label: root.properties.name || 'Root',
           nodeType: root.labels[0],
           level: 0,
           properties: JSON.stringify(root.properties),
@@ -525,100 +540,48 @@ const root = {
         nodeIds.add(rootId);
       }
 
-      // Process DataObjects (level 1)
-      const dataObjects = record.get('dataObjects');
-      dataObjects.forEach(item => {
+      // Process connected nodes
+      const connectedNodesList = record.get('nodes') || [];
+      connectedNodesList.forEach(item => {
         if (item.node) {
           const nodeId = item.node.identity.toString();
           if (!nodeIds.has(nodeId)) {
-            nodes.push({
+            // Convert Neo4j Integer to JavaScript number
+            const level = item.level && typeof item.level.toInt === 'function'
+              ? item.level.toInt()
+              : (typeof item.level === 'number' ? item.level : 1);
+
+            graphNodes.push({
               id: nodeId,
-              label: item.node.properties.name || 'Unknown',
-              nodeType: item.node.labels[0],
-              level: 1,
+              label: item.node.properties.name || item.node.properties.label || 'Unknown',
+              nodeType: item.node.labels ? item.node.labels[0] : 'Unknown',
+              level: level,
               properties: JSON.stringify(item.node.properties),
             });
             nodeIds.add(nodeId);
           }
+        }
+      });
 
-          // Add edge
-          if (item.rel) {
-            const sourceId = item.rel.start.toString();
-            const targetId = item.rel.end.toString();
-            edges.push({
-              id: item.rel.identity.toString(),
-              source: sourceId,
-              target: targetId,
+      // Process edges
+      const edgesList = record.get('edges') || [];
+      edgesList.forEach(item => {
+        if (item.rel) {
+          const edgeId = item.rel.identity.toString();
+          if (!edgeIds.has(edgeId)) {
+            graphEdges.push({
+              id: edgeId,
+              source: item.start.identity.toString(),
+              target: item.end.identity.toString(),
               label: item.rel.type,
               relationshipType: item.rel.type,
             });
+            edgeIds.add(edgeId);
           }
         }
       });
 
-      // Process dependants (level 2)
-      const dependants = record.get('dependants');
-      dependants.forEach(item => {
-        if (item.node) {
-          const nodeId = item.node.identity.toString();
-          if (!nodeIds.has(nodeId)) {
-            nodes.push({
-              id: nodeId,
-              label: item.node.properties.name || 'Unknown',
-              nodeType: item.node.labels[0],
-              level: 2,
-              properties: JSON.stringify(item.node.properties),
-            });
-            nodeIds.add(nodeId);
-          }
-
-          // Add edge
-          if (item.rel) {
-            const sourceId = item.rel.start.toString();
-            const targetId = item.rel.end.toString();
-            edges.push({
-              id: item.rel.identity.toString(),
-              source: sourceId,
-              target: targetId,
-              label: item.rel.type,
-              relationshipType: item.rel.type,
-            });
-          }
-        }
-      });
-
-      // Process servers (level 3)
-      const servers = record.get('servers');
-      servers.forEach(item => {
-        if (item.node) {
-          const nodeId = item.node.identity.toString();
-          if (!nodeIds.has(nodeId)) {
-            nodes.push({
-              id: nodeId,
-              label: item.node.properties.name || 'Unknown',
-              nodeType: item.node.labels[0],
-              level: 3,
-              properties: JSON.stringify(item.node.properties),
-            });
-            nodeIds.add(nodeId);
-          }
-
-          // Add edge
-          if (item.rel) {
-            const sourceId = item.rel.start.toString();
-            const targetId = item.rel.end.toString();
-            edges.push({
-              id: item.rel.identity.toString(),
-              source: sourceId,
-              target: targetId,
-              label: item.rel.type,
-              relationshipType: item.rel.type,
-            });
-          }
-        }
-      });
-
-      return { nodes, edges };
+      return { nodes: graphNodes, edges: graphEdges };
     } finally {
       await session.close();
     }

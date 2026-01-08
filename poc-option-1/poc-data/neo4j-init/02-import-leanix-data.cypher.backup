@@ -1,0 +1,138 @@
+// Super Relativity - Comprehensive LeanIX Data Import
+// This script imports all data from the mock LeanIX API into Neo4j
+// Run after 01-create-schema.cypher
+
+// ============================================================================
+// BUSINESS CAPABILITIES
+// ============================================================================
+
+CREATE (cap1:BusinessFunction {
+  id: 'CAP-001',
+  name: 'Customer Onboarding',
+  level: 'L1',
+  description: 'Acquire and onboard new customers',
+  owner: 'Chief Customer Officer',
+  criticality: 'Critical',
+  maturity: 'Defined',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+CREATE (cap2:BusinessFunction {
+  id: 'CAP-002',
+  name: 'Application Processing',
+  level: 'L2',
+  parent: 'CAP-001',
+  description: 'Process customer applications end-to-end',
+  owner: 'VP Operations',
+  criticality: 'Critical',
+  maturity: 'Managed',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+CREATE (cap3:BusinessFunction {
+  id: 'CAP-003',
+  name: 'Document Management',
+  level: 'L2',
+  parent: 'CAP-001',
+  description: 'Capture, store, and retrieve customer documents',
+  owner: 'VP Operations',
+  criticality: 'High',
+  maturity: 'Defined',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+CREATE (cap4:BusinessFunction {
+  id: 'CAP-004',
+  name: 'Customer Service & Support',
+  level: 'L1',
+  description: 'Support existing customers',
+  owner: 'Chief Customer Officer',
+  criticality: 'High',
+  maturity: 'Optimized',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+CREATE (cap5:BusinessFunction {
+  id: 'CAP-005',
+  name: 'Payment Processing',
+  level: 'L1',
+  description: 'Process customer payments and transactions',
+  owner: 'CFO',
+  criticality: 'Critical',
+  maturity: 'Optimized',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+CREATE (cap6:BusinessFunction {
+  id: 'CAP-006',
+  name: 'Risk Assessment & Fraud Detection',
+  level: 'L2',
+  parent: 'CAP-002',
+  description: 'Assess risk and detect fraud',
+  owner: 'Chief Risk Officer',
+  criticality: 'Critical',
+  maturity: 'Managed',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+CREATE (cap7:BusinessFunction {
+  id: 'CAP-007',
+  name: 'Compliance & Reporting',
+  level: 'L1',
+  description: 'Generate regulatory compliance reports',
+  owner: 'Chief Compliance Officer',
+  criticality: 'Critical',
+  maturity: 'Defined',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+CREATE (cap8:BusinessFunction {
+  id: 'CAP-008',
+  name: 'Analytics & Business Intelligence',
+  level: 'L1',
+  description: 'Business analytics and reporting',
+  owner: 'Chief Data Officer',
+  criticality: 'Medium',
+  maturity: 'Managed',
+  source: 'leanix',
+  syncedAt: datetime()
+});
+
+// Capability parent-child relationships
+MATCH (parent:BusinessFunction {id: 'CAP-001'}), (child:BusinessFunction {id: 'CAP-002'})
+CREATE (parent)-[:HAS_CHILD_CAPABILITY]->(child);
+
+MATCH (parent:BusinessFunction {id: 'CAP-001'}), (child:BusinessFunction {id: 'CAP-003'})
+CREATE (parent)-[:HAS_CHILD_CAPABILITY]->(child);
+
+MATCH (parent:BusinessFunction {id: 'CAP-002'}), (child:BusinessFunction {id: 'CAP-006'})
+CREATE (parent)-[:HAS_CHILD_CAPABILITY]->(child);
+
+// (Requirements removed - not needed in simplified schema)
+
+// (Infrastructure nodes removed - not needed in simplified schema)
+
+// (Diagram nodes and relationships removed - not needed in simplified schema)
+
+// ============================================================================
+// SUMMARY STATISTICS
+// ============================================================================
+
+// Count all entity types
+MATCH (n:BusinessFunction) WITH count(n) as capCount
+MATCH (n:Requirement) WITH capCount, count(n) as reqCount
+MATCH (n:Application) WITH capCount, reqCount, count(n) as appCount
+MATCH (n:DataObject) WITH capCount, reqCount, appCount, count(n) as dataCount
+RETURN
+  'Data Import Summary' as Summary,
+  capCount as BusinessCapabilities,
+  reqCount as Requirements,
+  appCount as Applications,
+  dataCount as DataObjects;

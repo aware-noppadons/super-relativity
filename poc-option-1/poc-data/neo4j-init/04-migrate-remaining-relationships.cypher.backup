@@ -1,0 +1,160 @@
+// Migration: Remaining Relationship Simplifications
+// Applies INQUIRE/MODIFY pattern to all remaining node pairs
+// Following CQRS: READ operations → INQUIRE, WRITE operations → MODIFY
+
+// ============================================================================
+// PAIR 1: AppChange → BusinessFunction
+// ============================================================================
+
+// ENABLES (2) → MODIFY {action: 'enable'}
+MATCH (ac:AppChange)-[old:ENABLES]->(bc:BusinessFunction)
+CREATE (ac)-[:MODIFY {
+  action: 'enable',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  migrated: true,
+  migrationDate: datetime()
+}]->(bc);
+
+// ENHANCES (4) → MODIFY {action: 'enhance'}
+MATCH (ac:AppChange)-[old:ENHANCES]->(bc:BusinessFunction)
+CREATE (ac)-[:MODIFY {
+  action: 'enhance',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  migrated: true,
+  migrationDate: datetime()
+}]->(bc);
+
+// ============================================================================
+// PAIR 2: AppChange → DataObject
+// ============================================================================
+
+// MODIFIES (4) → MODIFY {action: 'update'}
+MATCH (ac:AppChange)-[old:MODIFIES]->(d:DataObject)
+CREATE (ac)-[:MODIFY {
+  action: 'update',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// MIGRATES (1) → MODIFY {action: 'migrate'}
+MATCH (ac:AppChange)-[old:MIGRATES]->(d:DataObject)
+CREATE (ac)-[:MODIFY {
+  action: 'migrate',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// READS (3) → INQUIRE {action: 'read'}
+MATCH (ac:AppChange)-[old:READS]->(d:DataObject)
+CREATE (ac)-[:INQUIRE {
+  action: 'read',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// ============================================================================
+// PAIR 3: Component → DataObject
+// ============================================================================
+
+// MODIFIES (8) → MODIFY {action: 'update'}
+MATCH (comp:Component)-[old:MODIFIES]->(d:DataObject)
+CREATE (comp)-[:MODIFY {
+  action: 'update',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  frequency: old.frequency,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// READS (9) → INQUIRE {action: 'read'}
+MATCH (comp:Component)-[old:READS]->(d:DataObject)
+CREATE (comp)-[:INQUIRE {
+  action: 'read',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  frequency: old.frequency,
+  migrated: true,
+  migrationDate: datetime()
+}]->(d);
+
+// ============================================================================
+// PAIR 4: InfraChange → Server
+// ============================================================================
+
+// DECOMMISSIONS (1) → MODIFY {action: 'decommission'}
+MATCH (ic:InfraChange)-[old:DECOMMISSIONS]->(s:Server)
+CREATE (ic)-[:MODIFY {
+  action: 'decommission',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  downtime: old.downtime,
+  migrated: true,
+  migrationDate: datetime()
+}]->(s);
+
+// PATCHES (8) → MODIFY {action: 'patch'}
+MATCH (ic:InfraChange)-[old:PATCHES]->(s:Server)
+CREATE (ic)-[:MODIFY {
+  action: 'patch',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  downtime: old.downtime,
+  migrated: true,
+  migrationDate: datetime()
+}]->(s);
+
+// SCALES (2) → MODIFY {action: 'scale'}
+MATCH (ic:InfraChange)-[old:SCALES]->(s:Server)
+CREATE (ic)-[:MODIFY {
+  action: 'scale',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  downtime: old.downtime,
+  migrated: true,
+  migrationDate: datetime()
+}]->(s);
+
+// UPGRADES (3) → MODIFY {action: 'upgrade'}
+MATCH (ic:InfraChange)-[old:UPGRADES]->(s:Server)
+CREATE (ic)-[:MODIFY {
+  action: 'upgrade',
+  syncedAt: old.syncedAt,
+  description: old.description,
+  impact: old.impact,
+  downtime: old.downtime,
+  migrated: true,
+  migrationDate: datetime()
+}]->(s);
+
+// ============================================================================
+// Verification Queries
+// ============================================================================
+
+// Show new relationship summary
+MATCH ()-[r:MODIFY]->()
+WITH r.action as action, count(*) as count
+RETURN 'MODIFY' as relType, action, count
+ORDER BY action
+
+UNION
+
+MATCH ()-[r:INQUIRE]->()
+WITH r.action as action, count(*) as count
+RETURN 'INQUIRE' as relType, action, count
+ORDER BY action;

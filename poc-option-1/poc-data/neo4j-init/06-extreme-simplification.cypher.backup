@@ -1,0 +1,476 @@
+// Extreme Schema Simplification Migration
+// 1. Remove StorageInfrastructure and unwanted relationships
+// 2. Remove Requirement nodes
+// 3. Remove Infrastructure nodes
+// 4. Remove Diagram nodes
+// 5. Remove Container nodes
+// 6. Clean up relationship constraints
+// 7. Restructure API to be component-owned
+// 8. Single relationship per node pair with tags
+
+// ============================================================================
+// PART 1: Remove StorageInfrastructure and Transfer Properties
+// ============================================================================
+
+// Transfer STORED_IN relationship properties to Table if they exist
+MATCH (t:Table)-[old:STORED_IN]->(si:StorageInfrastructure)
+SET t.storageSystem = si.name,
+    t.storageType = si.type;
+
+// Delete old STORED_IN and STORES relationships
+MATCH ()-[r:STORED_IN|STORES]->()
+DELETE r;
+
+// Delete StorageInfrastructure nodes
+MATCH (si:StorageInfrastructure)
+DETACH DELETE si;
+
+// ============================================================================
+// PART 2: Remove Requirement Nodes
+// ============================================================================
+
+// Delete all Requirement nodes (not needed in simplified schema)
+MATCH (r:Requirement)
+DETACH DELETE r;
+
+// ============================================================================
+// PART 3: Remove Infrastructure Nodes
+// ============================================================================
+
+// Delete all Infrastructure nodes (not needed in simplified schema)
+MATCH (i:Infrastructure)
+DETACH DELETE i;
+
+// ============================================================================
+// PART 4: Remove Diagram Nodes
+// ============================================================================
+
+// Delete all Diagram nodes (not needed in simplified schema)
+MATCH (d:Diagram)
+DETACH DELETE d;
+
+// ============================================================================
+// PART 5: Remove Container Nodes
+// ============================================================================
+
+// Delete all Container nodes (replaced by API nodes)
+MATCH (c:Container)
+DETACH DELETE c;
+
+// ============================================================================
+// PART 6: Clean Up Relationship Constraints - Enforce Allowed Patterns
+// ============================================================================
+//
+// Allowed relationship patterns (with mode/method tags):
+// 1. Application → Application (mode: relates), API (mode: calls),
+//    BusinessCapability (mode: owns), Component (mode: owns)
+// 2. API → Component (mode: exposes), DataObject (mode: works_on)
+// 3. Component → BusinessCapability (mode: implements), Server (mode: installs_on),
+//    Component (mode: uses|owns|...), DataObject (mode: use)
+// 4. BusinessCapability → API (mode: includes), BusinessCapability (mode: relates),
+//    DataObject (mode: use)
+// 5. AppChange → Component (mode: relates), BusinessCapability (mode: relates),
+//    DataObject (mode: relates)
+// 6. Table → DataObject (mode: materializes)
+// 7. InfraChange → Server (mode: relates)
+// ============================================================================
+
+// Delete relationships that don't match allowed patterns
+
+// Application: only → Application, API, BusinessCapability, Component
+MATCH (app:Application)-[r]-(other)
+WHERE NOT (labels(other)[0] IN ['Application', 'API', 'BusinessFunction', 'Component'])
+DELETE r;
+
+// API: only → Component, DataObject
+MATCH (api:API)-[r]-(other)
+WHERE NOT (labels(other)[0] IN ['Component', 'DataObject'])
+DELETE r;
+
+// Component: only → BusinessFunction, Server, Component, DataObject
+MATCH (c:Component)-[r]-(other)
+WHERE NOT (labels(other)[0] IN ['BusinessFunction', 'Server', 'Component', 'DataObject', 'API', 'Application'])
+DELETE r;
+
+// BusinessFunction: only → API, BusinessFunction, DataObject
+MATCH (bf:BusinessFunction)-[r]-(other)
+WHERE NOT (labels(other)[0] IN ['API', 'BusinessFunction', 'DataObject', 'Component', 'Application'])
+DELETE r;
+
+// AppChange: only → Component, BusinessFunction, DataObject
+MATCH (ac:AppChange)-[r]-(other)
+WHERE NOT (labels(other)[0] IN ['Component', 'BusinessFunction', 'DataObject'])
+DELETE r;
+
+// Table: only → DataObject
+MATCH (t:Table)-[r]-(other)
+WHERE NOT (labels(other)[0] IN ['DataObject'])
+DELETE r;
+
+// InfraChange: only → Server
+MATCH (ic:InfraChange)-[r]-(other)
+WHERE NOT (labels(other)[0] IN ['Server'])
+DELETE r;
+
+// Server: only incoming from Component, InfraChange (delete all outgoing from Server)
+MATCH (s:Server)-[r]->(other)
+DELETE r;
+
+// Server: delete Server→Server relationships (not allowed)
+MATCH (s1:Server)-[r]-(s2:Server)
+DELETE r;
+
+// ============================================================================
+// PART 7: Restructure API to be component-owned
+// ============================================================================
+
+// Create Component for each standalone API
+MATCH (api:API)
+WHERE NOT EXISTS((api)<-[:EXPOSES]-())
+CREATE (comp:Component {
+  id: replace(api.id, 'API-', 'COMP-API-'),
+  name: api.name + ' Component',
+  type: 'API Component',
+  technology: api.technology,
+  description: 'Component that exposes ' + api.name,
+  source: 'api-migration'
+})
+WITH api, comp
+CREATE (comp)-[:EXPOSES {
+  protocol: api.protocol,
+  port: api.port,
+  endpoints: []
+}]->(api)
+RETURN comp.name, api.name;
+
+// Note: BusinessFunction nodes are now created directly in 02-import-leanix-data.cypher
+
+// ============================================================================
+// PART 8: BusinessFunction Setup (No longer needed - nodes created as BusinessFunction)
+// ============================================================================
+
+// This step is now a no-op since all nodes are created as BusinessFunction from the start
+
+// ============================================================================
+// PART 9: Component Hierarchy Support
+// ============================================================================
+
+// Example: Application Service contains multiple components
+MATCH (parent:Component {name: 'Application Validator'}),
+      (child:Component {name: 'Authentication Service'})
+CREATE (parent)-[:CONTAINS_COMPONENT {
+  level: 1,
+  description: 'Parent-child component relationship'
+}]->(child);
+
+// ============================================================================
+// PART 10: Consolidate All Relationships to RELATED_TO with Tags
+// ============================================================================
+
+// Step 1: Convert all non-RELATED_TO relationships to RELATED_TO
+MATCH (a)-[r]->(b)
+WHERE type(r) <> 'RELATED_TO'
+WITH a, b, r, type(r) as relType, properties(r) as props, id(r) as relId
+MERGE (a)-[new:RELATED_TO]->(b)
+ON CREATE SET
+  new = props,
+  new.relationshipTypes = [relType],
+  new.tags = [relType]
+ON MATCH SET
+  new.relationshipTypes = CASE
+    WHEN new.relationshipTypes IS NULL THEN [relType]
+    WHEN NOT relType IN new.relationshipTypes THEN new.relationshipTypes + [relType]
+    ELSE new.relationshipTypes
+  END,
+  new.tags = CASE
+    WHEN new.tags IS NULL THEN [relType]
+    WHEN NOT relType IN new.tags THEN new.tags + [relType]
+    ELSE new.tags
+  END
+WITH collect(relId) as processedRels
+RETURN size(processedRels) as convertedRelationships;
+
+// Step 2: Delete old non-RELATED_TO relationships
+MATCH ()-[r]->()
+WHERE type(r) <> 'RELATED_TO'
+WITH r LIMIT 10000
+DELETE r;
+
+// Step 3: Check for any remaining non-RELATED_TO and delete in batches
+MATCH ()-[r]->()
+WHERE type(r) <> 'RELATED_TO'
+WITH r LIMIT 10000
+DELETE r;
+
+// Step 4: Ensure all RELATED_TO relationships have tags
+MATCH ()-[r:RELATED_TO]->()
+WHERE r.tags IS NULL OR size(r.tags) = 0
+SET r.tags = COALESCE(r.relationshipTypes, ['RELATED_TO']);
+
+// Step 5: Consolidate bidirectional relationships
+// Find pairs where both A→B and B→A exist, merge into single relationship
+// Keep the relationship with the lower node ID as source (canonical direction)
+MATCH (a)-[r1:RELATED_TO]->(b)
+WHERE id(a) < id(b)
+OPTIONAL MATCH (b)-[r2:RELATED_TO]->(a)
+WITH a, b, r1, r2
+WHERE r2 IS NOT NULL
+SET r1.tags = COALESCE(r1.tags, []) + COALESCE(r2.tags, []),
+    r1.relationshipTypes = COALESCE(r1.relationshipTypes, []) + COALESCE(r2.relationshipTypes, []),
+    r1.bidirectional = true
+DELETE r2;
+
+// Step 5.5: Delete disallowed relationship patterns after consolidation
+// Server→Server relationships are not allowed in the schema
+MATCH (s1:Server)-[r:RELATED_TO]-(s2:Server)
+DELETE r;
+
+// Step 6: Add mode/method tags to all relationships for filtering
+// These tags enable semantic filtering of relationships
+
+// Application → Application: mode = relates
+MATCH (a:Application)-[r:RELATED_TO]->(b:Application)
+WHERE r.mode IS NULL
+SET r.mode = 'relates';
+
+// Application → API: mode = calls
+MATCH (a:Application)-[r:RELATED_TO]->(api:API)
+WHERE r.mode IS NULL
+SET r.mode = 'calls';
+
+// Application → BusinessFunction: mode = owns
+MATCH (a:Application)-[r:RELATED_TO]->(bf:BusinessFunction)
+WHERE r.mode IS NULL
+SET r.mode = 'owns';
+
+// Application → Component: mode = owns
+MATCH (a:Application)-[r:RELATED_TO]->(c:Component)
+WHERE r.mode IS NULL
+SET r.mode = 'owns';
+
+// API → Component: mode = exposes
+MATCH (api:API)-[r:RELATED_TO]->(c:Component)
+WHERE r.mode IS NULL
+SET r.mode = 'exposes';
+
+// Component → API: mode = exposes (bidirectional)
+MATCH (c:Component)-[r:RELATED_TO]->(api:API)
+WHERE r.mode IS NULL
+SET r.mode = 'exposes';
+
+// API → DataObject: mode = works_on
+MATCH (api:API)-[r:RELATED_TO]->(d:DataObject)
+WHERE r.mode IS NULL
+SET r.mode = 'works_on';
+
+// Component → BusinessFunction: mode = implements
+MATCH (c:Component)-[r:RELATED_TO]->(bf:BusinessFunction)
+WHERE r.mode IS NULL
+SET r.mode = 'implements';
+
+// BusinessFunction → Component: mode = implemented_by (reverse)
+MATCH (bf:BusinessFunction)-[r:RELATED_TO]->(c:Component)
+WHERE r.mode IS NULL
+SET r.mode = 'implemented_by';
+
+// Component → Server: mode = installs_on
+MATCH (c:Component)-[r:RELATED_TO]->(s:Server)
+WHERE r.mode IS NULL
+SET r.mode = 'installs_on';
+
+// Component → Component: mode defaults to 'relates' (can be uses, owns, etc.)
+MATCH (c1:Component)-[r:RELATED_TO]->(c2:Component)
+WHERE r.mode IS NULL
+SET r.mode = COALESCE(
+  CASE
+    WHEN 'HAS_COMPONENT' IN r.tags THEN 'owns'
+    WHEN 'CONTAINS_COMPONENT' IN r.tags THEN 'owns'
+    WHEN 'CALLS' IN r.tags THEN 'uses'
+    ELSE 'relates'
+  END,
+  'relates'
+);
+
+// Component → DataObject: mode = use
+MATCH (c:Component)-[r:RELATED_TO]->(d:DataObject)
+WHERE r.mode IS NULL
+SET r.mode = 'use';
+
+// BusinessFunction → API: mode = includes
+MATCH (bf:BusinessFunction)-[r:RELATED_TO]->(api:API)
+WHERE r.mode IS NULL
+SET r.mode = 'includes';
+
+// BusinessFunction → BusinessFunction: mode = relates
+MATCH (bf1:BusinessFunction)-[r:RELATED_TO]->(bf2:BusinessFunction)
+WHERE r.mode IS NULL
+SET r.mode = COALESCE(
+  CASE
+    WHEN 'HAS_CHILD_CAPABILITY' IN r.tags THEN 'contains'
+    ELSE 'relates'
+  END,
+  'relates'
+);
+
+// BusinessFunction → DataObject: mode = use
+MATCH (bf:BusinessFunction)-[r:RELATED_TO]->(d:DataObject)
+WHERE r.mode IS NULL
+SET r.mode = 'use';
+
+// AppChange → Component, BusinessFunction, DataObject: mode = relates
+MATCH (ac:AppChange)-[r:RELATED_TO]->(target)
+WHERE (labels(target)[0] IN ['Component', 'BusinessFunction', 'DataObject'])
+  AND r.mode IS NULL
+SET r.mode = 'relates';
+
+// Table → DataObject: mode = materializes
+MATCH (t:Table)-[r:RELATED_TO]->(d:DataObject)
+WHERE r.mode IS NULL
+SET r.mode = 'materializes';
+
+// DataObject → Table: mode = materialized_by (reverse)
+MATCH (d:DataObject)-[r:RELATED_TO]->(t:Table)
+WHERE r.mode IS NULL
+SET r.mode = 'materialized_by';
+
+// InfraChange → Server: mode = relates
+MATCH (ic:InfraChange)-[r:RELATED_TO]->(s:Server)
+WHERE r.mode IS NULL
+SET r.mode = 'relates';
+
+// ============================================================================
+// PART 11: MANUAL CLEANUP (Run after sync activities)
+// ============================================================================
+// This section can be run manually to clean up stray nodes/relationships
+// that may be introduced by sync activities from LeanIX, PlantUML, etc.
+//
+// To run manually:
+// docker exec super-relativity-neo4j cypher-shell -u neo4j -p super-relativity-2025 < manual-cleanup.cypher
+//
+// Or copy the queries below and run them in Neo4j Browser after a sync.
+// ============================================================================
+
+// Cleanup 1: Remove Requirement nodes (not in simplified schema)
+// Requirement nodes may be synced from LeanIX but are not part of our schema
+MATCH (r:Requirement)
+DETACH DELETE r;
+
+// Cleanup 2: Remove disallowed Server→Server relationships
+// Server nodes should only have incoming relationships from Component and InfraChange
+MATCH (s1:Server)-[r:RELATED_TO]-(s2:Server)
+DELETE r;
+
+// Cleanup 3: Remove Infrastructure nodes (if synced from LeanIX)
+MATCH (i:Infrastructure)
+DETACH DELETE i;
+
+// Cleanup 4: Remove Diagram nodes (if synced from PlantUML)
+MATCH (d:Diagram)
+DETACH DELETE d;
+
+// Cleanup 5: Remove Container nodes (should be migrated to API already)
+MATCH (c:Container)
+DETACH DELETE c;
+
+// Cleanup 6: Remove StorageInfrastructure nodes (should be deleted already)
+MATCH (si:StorageInfrastructure)
+DETACH DELETE si;
+
+// Cleanup 7: Add missing mode tags to AppChange relationships
+MATCH (ac:AppChange)-[r:RELATED_TO]->(target)
+WHERE (labels(target)[0] IN ['Component', 'BusinessFunction', 'DataObject'])
+  AND r.mode IS NULL
+SET r.mode = 'relates';
+
+// Cleanup 8: Remove any non-RELATED_TO relationships that might have been synced
+MATCH ()-[r]->()
+WHERE type(r) <> 'RELATED_TO'
+DELETE r;
+
+// Cleanup 9: Ensure all RELATED_TO relationships have tags
+MATCH ()-[r:RELATED_TO]->()
+WHERE r.tags IS NULL OR size(r.tags) = 0
+SET r.tags = ['RELATED_TO'];
+
+// Cleanup 10: Remove relationships that don't match allowed patterns
+
+// Application: only → Application, API, BusinessFunction, Component
+MATCH (app:Application)-[r:RELATED_TO]-(other)
+WHERE NOT (labels(other)[0] IN ['Application', 'API', 'BusinessFunction', 'Component'])
+DELETE r;
+
+// API: only → Component, DataObject
+MATCH (api:API)-[r:RELATED_TO]-(other)
+WHERE NOT (labels(other)[0] IN ['Component', 'DataObject'])
+DELETE r;
+
+// Component: only → BusinessFunction, Server, Component, DataObject, API, Application
+MATCH (c:Component)-[r:RELATED_TO]-(other)
+WHERE NOT (labels(other)[0] IN ['BusinessFunction', 'Server', 'Component', 'DataObject', 'API', 'Application'])
+DELETE r;
+
+// BusinessFunction: only → API, BusinessFunction, DataObject, Component, Application
+MATCH (bf:BusinessFunction)-[r:RELATED_TO]-(other)
+WHERE NOT (labels(other)[0] IN ['API', 'BusinessFunction', 'DataObject', 'Component', 'Application'])
+DELETE r;
+
+// AppChange: only → Component, BusinessFunction, DataObject
+MATCH (ac:AppChange)-[r:RELATED_TO]-(other)
+WHERE NOT (labels(other)[0] IN ['Component', 'BusinessFunction', 'DataObject'])
+DELETE r;
+
+// Table: only → DataObject
+MATCH (t:Table)-[r:RELATED_TO]-(other)
+WHERE NOT (labels(other)[0] IN ['DataObject'])
+DELETE r;
+
+// InfraChange: only → Server
+MATCH (ic:InfraChange)-[r:RELATED_TO]-(other)
+WHERE NOT (labels(other)[0] IN ['Server'])
+DELETE r;
+
+// Server: only incoming from Component, InfraChange (delete all outgoing)
+MATCH (s:Server)-[r:RELATED_TO]->(other)
+DELETE r;
+
+// ============================================================================
+// VERIFICATION QUERIES
+// ============================================================================
+
+// Count node types
+MATCH (n)
+RETURN labels(n)[0] as nodeType, count(*) as count
+ORDER BY count DESC;
+
+// Verify no StorageInfrastructure
+MATCH (si:StorageInfrastructure)
+RETURN count(si) as shouldBeZero;
+
+// Verify BusinessFunction
+MATCH (bf:BusinessFunction)
+RETURN count(bf) as businessFunctionCount;
+
+// Verify Container removed
+MATCH (c:Container)
+RETURN count(c) as shouldBeZero;
+
+// Check RELATED_TO relationships
+MATCH ()-[r:RELATED_TO]->()
+RETURN r.tags as tags, count(*) as count
+ORDER BY count DESC
+LIMIT 20;
+
+// Check APIs with components
+MATCH (comp:Component)-[:EXPOSES]->(api:API)
+RETURN comp.name, api.name
+LIMIT 10;
+
+// Check component hierarchy
+MATCH (parent:Component)-[:CONTAINS_COMPONENT]->(child:Component)
+RETURN parent.name, child.name;
+
+// Verify single relationship per node pair
+MATCH (a)-[r]->(b)
+WITH a, b, count(r) as relCount
+WHERE relCount > 1
+RETURN count(*) as nodesPairsWithMultipleRels;

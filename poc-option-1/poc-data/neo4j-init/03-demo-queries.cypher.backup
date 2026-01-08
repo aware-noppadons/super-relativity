@@ -61,7 +61,7 @@ RETURN
 // ============================================================================
 // Use Case: "Show me the complete capability breakdown"
 
-MATCH (cap:BusinessCapability {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
+MATCH (cap:BusinessFunction {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
        -[:IMPLEMENTED_BY]->(a:Application)
 RETURN
   cap.name as Capability,
@@ -71,7 +71,7 @@ RETURN
 ORDER BY cap.criticality DESC;
 
 // Detailed version with data and infrastructure
-MATCH (cap:BusinessCapability {id: 'CAP-002'})
+MATCH (cap:BusinessFunction {id: 'CAP-002'})
 OPTIONAL MATCH (cap)-[:REQUIRES]->(r:Requirement)
 OPTIONAL MATCH (r)-[:IMPLEMENTED_BY]->(a:Application)
 OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
@@ -105,7 +105,7 @@ ORDER BY a.costPerYear DESC;
 // ============================================================================
 // Use Case: "What's the total cost of our Application Processing capability?"
 
-MATCH (cap:BusinessCapability {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
+MATCH (cap:BusinessFunction {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
        -[:IMPLEMENTED_BY]->(a:Application)
 RETURN
   cap.name as Capability,
@@ -114,7 +114,7 @@ RETURN
   collect(DISTINCT a.name) as Applications;
 
 // With infrastructure costs
-MATCH (cap:BusinessCapability {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
+MATCH (cap:BusinessFunction {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
        -[:IMPLEMENTED_BY]->(a:Application)-[:DEPLOYED_ON]->(i:Infrastructure)
 RETURN
   cap.name as Capability,
@@ -146,7 +146,7 @@ ORDER BY a.costPerYear DESC;
 MATCH (d:DataObject {id: 'DATA-789'})
 OPTIONAL MATCH (a:Application)-[:USES]->(d)
 OPTIONAL MATCH (r:Requirement)-[:IMPLEMENTED_BY]->(a)
-OPTIONAL MATCH (cap:BusinessCapability)-[:REQUIRES]->(r)
+OPTIONAL MATCH (cap:BusinessFunction)-[:REQUIRES]->(r)
 RETURN
   d.name as DataObject,
   d.sensitivity as Sensitivity,
@@ -175,7 +175,7 @@ ORDER BY a.costPerYear DESC;
 // ============================================================================
 // Use Case: "Complete traceability from business capability to infrastructure"
 
-MATCH path = (cap:BusinessCapability)-[:REQUIRES]->(r:Requirement)
+MATCH path = (cap:BusinessFunction)-[:REQUIRES]->(r:Requirement)
        -[:IMPLEMENTED_BY]->(a:Application)-[:USES]->(d:DataObject)
        -[:STORED_ON]->(i:Infrastructure)
 WHERE cap.criticality = 'Critical'
@@ -183,7 +183,7 @@ RETURN path
 LIMIT 50;
 
 // Summary version for presentation
-MATCH (cap:BusinessCapability)
+MATCH (cap:BusinessFunction)
 WHERE cap.criticality = 'Critical'
 OPTIONAL MATCH (cap)-[:REQUIRES]->(r:Requirement)
 OPTIONAL MATCH (r)-[:IMPLEMENTED_BY]->(a:Application)
@@ -221,7 +221,7 @@ RETURN
 // Use Case: "Executive dashboard showing system health"
 
 // Count by entity type
-MATCH (cap:BusinessCapability) WITH count(cap) as capCount
+MATCH (cap:BusinessFunction) WITH count(cap) as capCount
 MATCH (req:Requirement) WITH capCount, count(req) as reqCount
 MATCH (app:Application) WITH capCount, reqCount, count(app) as appCount
 MATCH (data:DataObject) WITH capCount, reqCount, appCount, count(data) as dataCount
@@ -234,7 +234,7 @@ RETURN
   infraCount as Infrastructure;
 
 // Critical entity counts
-MATCH (cap:BusinessCapability)
+MATCH (cap:BusinessFunction)
 WHERE cap.criticality = 'Critical'
 WITH count(cap) as criticalCaps
 MATCH (a:Application)

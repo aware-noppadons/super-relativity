@@ -5,9 +5,7 @@
 // CONSTRAINTS - Ensure data integrity
 // ============================================================================
 
-// Requirements
-CREATE CONSTRAINT requirement_id IF NOT EXISTS
-FOR (r:Requirement) REQUIRE r.id IS UNIQUE;
+// (Requirements removed - not needed in simplified schema)
 
 // Applications
 CREATE CONSTRAINT application_id IF NOT EXISTS
@@ -19,15 +17,23 @@ FOR (d:DataObject) REQUIRE d.id IS UNIQUE;
 
 // Business Capabilities
 CREATE CONSTRAINT capability_id IF NOT EXISTS
-FOR (c:BusinessCapability) REQUIRE c.id IS UNIQUE;
+FOR (c:BusinessFunction) REQUIRE c.id IS UNIQUE;
 
 // Components
 CREATE CONSTRAINT component_id IF NOT EXISTS
 FOR (c:Component) REQUIRE c.id IS UNIQUE;
 
-// Containers (C4 Model)
+// Containers (C4 Model - will be migrated to API)
 CREATE CONSTRAINT container_id IF NOT EXISTS
 FOR (c:Container) REQUIRE c.id IS UNIQUE;
+
+// APIs (created from Container migration)
+CREATE CONSTRAINT api_id IF NOT EXISTS
+FOR (a:API) REQUIRE a.id IS UNIQUE;
+
+// Tables (Physical storage)
+CREATE CONSTRAINT table_id IF NOT EXISTS
+FOR (t:Table) REQUIRE t.id IS UNIQUE;
 
 // Servers
 CREATE CONSTRAINT server_id IF NOT EXISTS
@@ -46,8 +52,7 @@ FOR (ic:InfraChange) REQUIRE ic.id IS UNIQUE;
 // ============================================================================
 
 // Text search indexes
-CREATE INDEX requirement_name IF NOT EXISTS
-FOR (r:Requirement) ON (r.name);
+// (Requirement indexes removed)
 
 CREATE INDEX application_name IF NOT EXISTS
 FOR (a:Application) ON (a.name);
@@ -59,17 +64,15 @@ FOR (d:DataObject) ON (d.name);
 CREATE INDEX application_lifecycle IF NOT EXISTS
 FOR (a:Application) ON (a.lifecycle);
 
-CREATE INDEX requirement_priority IF NOT EXISTS
-FOR (r:Requirement) ON (r.priority);
 
 CREATE INDEX data_object_sensitivity IF NOT EXISTS
 FOR (d:DataObject) ON (d.sensitivity);
 
 CREATE INDEX capability_criticality IF NOT EXISTS
-FOR (c:BusinessCapability) ON (c.criticality);
+FOR (c:BusinessFunction) ON (c.criticality);
 
 CREATE INDEX capability_level IF NOT EXISTS
-FOR (c:BusinessCapability) ON (c.level);
+FOR (c:BusinessFunction) ON (c.level);
 
 // ============================================================================
 // TIER 1 CRITICAL INDEXES - High-frequency properties (40+ queries)
@@ -82,6 +85,12 @@ FOR (c:Component) ON (c.name);
 CREATE INDEX container_name IF NOT EXISTS
 FOR (c:Container) ON (c.name);
 
+CREATE INDEX api_name IF NOT EXISTS
+FOR (a:API) ON (a.name);
+
+CREATE INDEX table_name IF NOT EXISTS
+FOR (t:Table) ON (t.name);
+
 CREATE INDEX server_name IF NOT EXISTS
 FOR (s:Server) ON (s.name);
 
@@ -92,11 +101,10 @@ CREATE INDEX infra_change_name IF NOT EXISTS
 FOR (ic:InfraChange) ON (ic.name);
 
 CREATE INDEX business_capability_name IF NOT EXISTS
-FOR (bc:BusinessCapability) ON (bc.name);
+FOR (bc:BusinessFunction) ON (bc.name);
 
 // Compliance & Security (15+ queries)
-CREATE INDEX requirement_compliance IF NOT EXISTS
-FOR (r:Requirement) ON (r.compliance);
+// (Requirement compliance index removed)
 
 // Environment & Deployment (20+ queries)
 CREATE INDEX server_environment IF NOT EXISTS
@@ -119,8 +127,10 @@ FOR (ic:InfraChange) ON (ic.status);
 CREATE INDEX infra_change_priority IF NOT EXISTS
 FOR (ic:InfraChange) ON (ic.priority);
 
-CREATE INDEX requirement_status IF NOT EXISTS
-FOR (r:Requirement) ON (r.status);
+
+// Relationship property indexes for MODIFY action filtering
+CREATE INDEX modify_action IF NOT EXISTS
+FOR ()-[r:MODIFY]-() ON (r.action);
 
 // Technology & Type
 CREATE INDEX component_technology IF NOT EXISTS
@@ -135,18 +145,30 @@ FOR (c:Container) ON (c.technology);
 CREATE INDEX container_type IF NOT EXISTS
 FOR (c:Container) ON (c.type);
 
+CREATE INDEX api_technology IF NOT EXISTS
+FOR (a:API) ON (a.technology);
+
+CREATE INDEX api_type IF NOT EXISTS
+FOR (a:API) ON (a.type);
+
 CREATE INDEX application_type IF NOT EXISTS
 FOR (a:Application) ON (a.type);
 
 CREATE INDEX data_object_type IF NOT EXISTS
 FOR (d:DataObject) ON (d.type);
 
+CREATE INDEX table_database IF NOT EXISTS
+FOR (t:Table) ON (t.database);
+
+CREATE INDEX table_schema IF NOT EXISTS
+FOR (t:Table) ON (t.schema);
+
 // Business Value
 CREATE INDEX application_business_value IF NOT EXISTS
 FOR (a:Application) ON (a.businessValue);
 
 CREATE INDEX business_capability_maturity IF NOT EXISTS
-FOR (bc:BusinessCapability) ON (bc.maturity);
+FOR (bc:BusinessFunction) ON (bc.maturity);
 
 // ============================================================================
 // COMPOSITE INDEXES - Common filter combinations
@@ -176,8 +198,8 @@ FOR (s:Server) ON (s.environment, s.purpose);
 // CALL db.index.fulltext.createNodeIndex(
 //   'searchAllEntities',
 //   [
-//     'Requirement', 'Application', 'DataObject', 'BusinessCapability',
-//     'Component', 'Container', 'Server', 'AppChange', 'InfraChange'
+//     'Application', 'DataObject', 'BusinessFunction',
+//     'Component', 'Server', 'AppChange', 'InfraChange', 'API', 'Table'
 //   ],
 //   ['name', 'description']
 // );
@@ -186,42 +208,7 @@ FOR (s:Server) ON (s.environment, s.purpose);
 // SAMPLE DATA - Initial dataset for POC
 // ============================================================================
 
-// Sample Requirements
-CREATE (r1:Requirement {
-  id: 'REQ-001',
-  name: 'Enable customer self-service application submission',
-  type: 'Functional Requirement',
-  priority: 'High',
-  status: 'Approved',
-  owner: 'Product Team',
-  description: 'Allow customers to submit applications online without agent assistance',
-  createdDate: datetime('2025-01-15'),
-  source: 'leanix'
-})
-
-CREATE (r2:Requirement {
-  id: 'REQ-002',
-  name: 'Real-time application status tracking',
-  type: 'Functional Requirement',
-  priority: 'Medium',
-  status: 'Approved',
-  owner: 'Product Team',
-  description: 'Provide customers with real-time updates on application status',
-  createdDate: datetime('2025-01-20'),
-  source: 'leanix'
-})
-
-CREATE (r3:Requirement {
-  id: 'REQ-003',
-  name: 'Secure document upload and storage',
-  type: 'Non-Functional Requirement',
-  priority: 'High',
-  status: 'Approved',
-  owner: 'Security Team',
-  description: 'Ensure PII data is encrypted in transit and at rest',
-  createdDate: datetime('2025-01-18'),
-  source: 'leanix'
-});
+// (Sample Requirements removed - not needed in simplified schema)
 
 // Sample Applications
 CREATE (a1:Application {
@@ -307,7 +294,7 @@ CREATE (d3:DataObject {
 });
 
 // Sample Business Capabilities
-CREATE (bc1:BusinessCapability {
+CREATE (bc1:BusinessFunction {
   id: 'BC-001',
   name: 'Customer Authentication',
   level: 'L2',
@@ -318,7 +305,7 @@ CREATE (bc1:BusinessCapability {
   source: 'leanix'
 })
 
-CREATE (bc2:BusinessCapability {
+CREATE (bc2:BusinessFunction {
   id: 'BC-002',
   name: 'Application Validation',
   level: 'L2',
@@ -329,7 +316,7 @@ CREATE (bc2:BusinessCapability {
   source: 'leanix'
 })
 
-CREATE (bc3:BusinessCapability {
+CREATE (bc3:BusinessFunction {
   id: 'BC-003',
   name: 'Document Management',
   level: 'L2',
@@ -340,7 +327,7 @@ CREATE (bc3:BusinessCapability {
   source: 'leanix'
 });
 
-// Sample Containers (C4 Model)
+// Sample Containers (C4 Model - will be migrated to API nodes)
 CREATE (cont1:Container {
   id: 'CONT-001',
   name: 'React Frontend',
@@ -632,18 +619,7 @@ CREATE (ic3:InfraChange {
 // RELATIONSHIPS - Create connections between entities
 // ============================================================================
 
-// Requirements → Applications
-MATCH (r:Requirement {id: 'REQ-001'}), (a:Application {id: 'APP-123'})
-CREATE (r)-[:IMPLEMENTED_BY {confidence: 1.0, source: 'leanix'}]->(a);
-
-MATCH (r:Requirement {id: 'REQ-001'}), (a:Application {id: 'APP-456'})
-CREATE (r)-[:IMPLEMENTED_BY {confidence: 1.0, source: 'leanix'}]->(a);
-
-MATCH (r:Requirement {id: 'REQ-002'}), (a:Application {id: 'APP-123'})
-CREATE (r)-[:IMPLEMENTED_BY {confidence: 1.0, source: 'leanix'}]->(a);
-
-MATCH (r:Requirement {id: 'REQ-003'}), (a:Application {id: 'APP-789'})
-CREATE (r)-[:IMPLEMENTED_BY {confidence: 1.0, source: 'leanix'}]->(a);
+// (Requirement relationships removed)
 
 // Applications → Data Objects (high-level)
 MATCH (a:Application {id: 'APP-123'}), (d:DataObject {id: 'DATA-789'})
@@ -655,297 +631,114 @@ CREATE (a)-[:USES {operations: ['READ', 'WRITE'], source: 'leanix'}]->(d);
 MATCH (a:Application {id: 'APP-789'}), (d:DataObject {id: 'DATA-345'})
 CREATE (a)-[:USES {operations: ['READ', 'WRITE'], source: 'leanix'}]->(d);
 
-// Applications → Containers (C4 Model Layer)
-MATCH (a:Application {id: 'APP-123'}), (c:Container {id: 'CONT-001'})
-CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
+// (Requirement → BusinessFunction relationships removed)
 
-MATCH (a:Application {id: 'APP-123'}), (c:Container {id: 'CONT-002'})
-CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
-
-MATCH (a:Application {id: 'APP-456'}), (c:Container {id: 'CONT-003'})
-CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
-
-MATCH (a:Application {id: 'APP-789'}), (c:Container {id: 'CONT-004'})
-CREATE (a)-[:CONTAINS {level: 'container', source: 'architecture'}]->(c);
-
-// Application → Application (C4 Context Diagram relationships)
-MATCH (a1:Application {id: 'APP-123'}), (a2:Application {id: 'APP-456'})
-CREATE (a1)-[:CALLS {
-  protocol: 'HTTPS/REST',
-  purpose: 'Application submission processing',
-  description: 'Customer Portal calls Application Processing API for application submission',
-  source: 'architecture'
-}]->(a2);
-
-MATCH (a1:Application {id: 'APP-456'}), (a2:Application {id: 'APP-789'})
-CREATE (a1)-[:CALLS {
-  protocol: 'HTTPS/REST',
-  purpose: 'Document validation',
-  description: 'Application Processing API calls Document Service for document validation',
-  source: 'architecture'
-}]->(a2);
-
-// Containers → Components (C4 Component Layer within Containers)
-MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-001'})
-CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
-
-MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-002'})
-CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
-
-MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-003'})
-CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
-
-MATCH (c:Container {id: 'CONT-003'}), (comp:Component {id: 'COMP-004'})
-CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
-
-MATCH (c:Container {id: 'CONT-004'}), (comp:Component {id: 'COMP-005'})
-CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
-
-MATCH (c:Container {id: 'CONT-004'}), (comp:Component {id: 'COMP-006'})
-CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
-
-MATCH (c:Container {id: 'CONT-004'}), (comp:Component {id: 'COMP-007'})
-CREATE (c)-[:CONTAINS {level: 'component', source: 'code'}]->(comp);
-
-// Container inter-communication
-MATCH (c1:Container {id: 'CONT-001'}), (c2:Container {id: 'CONT-002'})
-CREATE (c1)-[:COMMUNICATES_WITH {
-  protocol: 'HTTPS/REST',
-  synchronous: true,
-  description: 'Frontend calls API Gateway for all backend operations',
-  source: 'architecture'
-}]->(c2);
-
-MATCH (c1:Container {id: 'CONT-002'}), (c2:Container {id: 'CONT-003'})
-CREATE (c1)-[:COMMUNICATES_WITH {
-  protocol: 'HTTPS/REST',
-  synchronous: true,
-  description: 'API Gateway routes application requests to Application Service',
-  source: 'architecture'
-}]->(c2);
-
-MATCH (c1:Container {id: 'CONT-002'}), (c2:Container {id: 'CONT-004'})
-CREATE (c1)-[:COMMUNICATES_WITH {
-  protocol: 'HTTPS/REST',
-  synchronous: true,
-  description: 'API Gateway routes document requests to Document Service',
-  source: 'architecture'
-}]->(c2);
-
-MATCH (c1:Container {id: 'CONT-003'}), (c2:Container {id: 'CONT-004'})
-CREATE (c1)-[:COMMUNICATES_WITH {
-  protocol: 'HTTPS/REST',
-  synchronous: true,
-  description: 'Application Service requests document validation from Document Service',
-  source: 'architecture'
-}]->(c2);
-
-// Components → Data Objects (Component layer handles most data access)
-MATCH (comp:Component {id: 'COMP-004'}), (d:DataObject {id: 'DATA-789'})
-CREATE (comp)-[:USES {
-  operations: ['READ', 'WRITE'],
-  frequency: 'High',
-  description: 'DataAccessLayer reads/writes customer data',
-  source: 'code'
-}]->(d);
-
-MATCH (comp:Component {id: 'COMP-004'}), (d:DataObject {id: 'DATA-012'})
-CREATE (comp)-[:USES {
-  operations: ['READ', 'WRITE'],
-  frequency: 'High',
-  description: 'DataAccessLayer manages application records',
-  source: 'code'
-}]->(d);
-
-MATCH (comp:Component {id: 'COMP-007'}), (d:DataObject {id: 'DATA-345'})
-CREATE (comp)-[:USES {
-  operations: ['READ', 'WRITE'],
-  frequency: 'High',
-  description: 'StorageManager handles document storage and retrieval',
-  source: 'code'
-}]->(d);
-
-// Containers → Data Objects (Only for storage containers without components)
-MATCH (c:Container {id: 'CONT-005'}), (d:DataObject {id: 'DATA-789'})
-CREATE (c)-[:STORES {
-  description: 'PostgreSQL database physically stores customer data',
-  source: 'architecture'
-}]->(d);
-
-MATCH (c:Container {id: 'CONT-005'}), (d:DataObject {id: 'DATA-012'})
-CREATE (c)-[:STORES {
-  description: 'PostgreSQL database physically stores application data',
-  source: 'architecture'
-}]->(d);
-
-MATCH (c:Container {id: 'CONT-006'}), (d:DataObject {id: 'DATA-345'})
-CREATE (c)-[:STORES {
-  description: 'S3 physically stores document files',
-  source: 'architecture'
-}]->(d);
-
-// Containers → Servers
-MATCH (c:Container {id: 'CONT-001'}), (s:Server {id: 'SRV-001'})
-CREATE (c)-[:DEPLOYED_ON {
-  environment: 'production',
-  replicas: 3,
-  description: 'React Frontend deployed on web server',
-  source: 'architecture'
-}]->(s);
-
-MATCH (c:Container {id: 'CONT-002'}), (s:Server {id: 'SRV-003'})
-CREATE (c)-[:DEPLOYED_ON {
-  environment: 'production',
-  replicas: 2,
-  description: 'API Gateway deployed on API server',
-  source: 'architecture'
-}]->(s);
-
-MATCH (c:Container {id: 'CONT-003'}), (s:Server {id: 'SRV-003'})
-CREATE (c)-[:DEPLOYED_ON {
-  environment: 'production',
-  replicas: 4,
-  description: 'Application Service deployed on API server',
-  source: 'architecture'
-}]->(s);
-
-MATCH (c:Container {id: 'CONT-005'}), (s:Server {id: 'SRV-005'})
-CREATE (c)-[:DEPLOYED_ON {
-  environment: 'production',
-  description: 'PostgreSQL database running on database server',
-  source: 'architecture'
-}]->(s);
-
-// AppChange → BusinessCapability, Component, DataObject (only modify and add/enable)
+// AppChange → BusinessFunction, Component, DataObject (MODIFY with action property)
 // AC-001: Add MFA capability
-MATCH (ac:AppChange {id: 'AC-001'}), (bc:BusinessCapability {id: 'BC-001'})
-CREATE (ac)-[:ADDS {
+MATCH (ac:AppChange {id: 'AC-001'}), (bc:BusinessFunction {id: 'BC-001'})
+CREATE (ac)-[:MODIFY {
+  action: 'create',
   description: 'Adding multi-factor authentication enhances Customer Authentication capability',
   impact: 'High',
   source: 'change-management'
 }]->(bc);
 
 MATCH (ac:AppChange {id: 'AC-001'}), (comp:Component {id: 'COMP-002'})
-CREATE (ac)-[:ADDS {
+CREATE (ac)-[:MODIFY {
+  action: 'create',
   description: 'ValidationService will gain MFA validation logic',
   impact: 'High',
   source: 'change-management'
 }]->(comp);
 
 // AC-002: Modify validation rules
-MATCH (ac:AppChange {id: 'AC-002'}), (bc:BusinessCapability {id: 'BC-002'})
-CREATE (ac)-[:MODIFIES {
+MATCH (ac:AppChange {id: 'AC-002'}), (bc:BusinessFunction {id: 'BC-002'})
+CREATE (ac)-[:MODIFY {
+  action: 'update',
   description: 'Updating validation rules to support new application types',
   impact: 'Medium',
   source: 'change-management'
 }]->(bc);
 
 MATCH (ac:AppChange {id: 'AC-002'}), (comp:Component {id: 'COMP-002'})
-CREATE (ac)-[:MODIFIES {
+CREATE (ac)-[:MODIFY {
+  action: 'update',
   description: 'ValidationService business rules will be modified',
   impact: 'Medium',
   source: 'change-management'
 }]->(comp);
 
 MATCH (ac:AppChange {id: 'AC-002'}), (d:DataObject {id: 'DATA-012'})
-CREATE (ac)-[:MODIFIES {
+CREATE (ac)-[:MODIFY {
+  action: 'update',
   description: 'ApplicationTable schema may need updates for new validation fields',
   impact: 'Low',
   source: 'change-management'
 }]->(d);
 
 // AC-003: Enable document versioning
-MATCH (ac:AppChange {id: 'AC-003'}), (bc:BusinessCapability {id: 'BC-003'})
-CREATE (ac)-[:ENABLES {
+MATCH (ac:AppChange {id: 'AC-003'}), (bc:BusinessFunction {id: 'BC-003'})
+CREATE (ac)-[:MODIFY {
+  action: 'enable',
   description: 'Enabling version control for Document Management capability',
   impact: 'Medium',
   source: 'change-management'
 }]->(bc);
 
 MATCH (ac:AppChange {id: 'AC-003'}), (comp:Component {id: 'COMP-007'})
-CREATE (ac)-[:ENABLES {
+CREATE (ac)-[:MODIFY {
+  action: 'enable',
   description: 'StorageManager will enable versioning features',
   impact: 'Medium',
   source: 'change-management'
 }]->(comp);
 
 MATCH (ac:AppChange {id: 'AC-003'}), (d:DataObject {id: 'DATA-345'})
-CREATE (ac)-[:ENABLES {
+CREATE (ac)-[:MODIFY {
+  action: 'enable',
   description: 'DocumentStorage will support version metadata',
   impact: 'Medium',
   source: 'change-management'
 }]->(d);
 
-// InfraChange → Server, Container (only modify and add/enable)
+// InfraChange → Server (only modify and add/enable)
 // IC-001: Upgrade database server
 MATCH (ic:InfraChange {id: 'IC-001'}), (s:Server {id: 'SRV-005'})
-CREATE (ic)-[:MODIFIES {
+CREATE (ic)-[:MODIFY {
+  action: 'update',
   description: 'Upgrading database server instance type for better performance',
   impact: 'High',
   downtime: '2 hours',
   source: 'infrastructure-management'
 }]->(s);
 
-MATCH (ic:InfraChange {id: 'IC-001'}), (c:Container {id: 'CONT-005'})
-CREATE (ic)-[:MODIFIES {
-  description: 'PostgreSQL container configuration will be updated',
-  impact: 'Medium',
-  downtime: '2 hours',
-  source: 'infrastructure-management'
-}]->(c);
-
 // IC-002: Add web server capacity
 MATCH (ic:InfraChange {id: 'IC-002'}), (s:Server {id: 'SRV-001'})
-CREATE (ic)-[:ADDS {
+CREATE (ic)-[:MODIFY {
+  action: 'create',
   description: 'Adding additional server instances to web server cluster',
   impact: 'Low',
   downtime: '0 hours',
   source: 'infrastructure-management'
 }]->(s);
 
-MATCH (ic:InfraChange {id: 'IC-002'}), (c:Container {id: 'CONT-001'})
-CREATE (ic)-[:ADDS {
-  description: 'More frontend container instances will be deployed',
-  impact: 'Low',
-  downtime: '0 hours',
-  source: 'infrastructure-management'
-}]->(c);
-
 // IC-003: Enable API server auto-scaling
 MATCH (ic:InfraChange {id: 'IC-003'}), (s:Server {id: 'SRV-003'})
-CREATE (ic)-[:ENABLES {
+CREATE (ic)-[:MODIFY {
+  action: 'enable',
   description: 'Enabling auto-scaling capability for API server cluster',
   impact: 'Medium',
   downtime: '0 hours',
   source: 'infrastructure-management'
 }]->(s);
 
-MATCH (ic:InfraChange {id: 'IC-003'}), (c:Container {id: 'CONT-002'})
-CREATE (ic)-[:ENABLES {
-  description: 'API Gateway will support dynamic scaling',
-  impact: 'Medium',
-  downtime: '0 hours',
-  source: 'infrastructure-management'
-}]->(c);
-
-MATCH (ic:InfraChange {id: 'IC-003'}), (c:Container {id: 'CONT-003'})
-CREATE (ic)-[:ENABLES {
-  description: 'Application Service will support dynamic scaling',
-  impact: 'Medium',
-  downtime: '0 hours',
-  source: 'infrastructure-management'
-}]->(c);
-
 // ============================================================================
 // VERIFICATION QUERIES
 // ============================================================================
 
 // Count nodes by type
-MATCH (n:Requirement) RETURN 'Requirements' as Type, count(n) as Count
-UNION
+// (Requirement count removed)
 MATCH (n:Application) RETURN 'Applications' as Type, count(n) as Count
-UNION
-MATCH (n:Container) RETURN 'Containers' as Type, count(n) as Count
 UNION
 MATCH (n:Component) RETURN 'Components' as Type, count(n) as Count
 UNION
@@ -953,7 +746,7 @@ MATCH (n:DataObject) RETURN 'Data Objects' as Type, count(n) as Count
 UNION
 MATCH (n:Server) RETURN 'Servers' as Type, count(n) as Count
 UNION
-MATCH (n:BusinessCapability) RETURN 'Business Capabilities' as Type, count(n) as Count
+MATCH (n:BusinessFunction) RETURN 'Business Functions' as Type, count(n) as Count
 UNION
 MATCH (n:AppChange) RETURN 'Application Changes' as Type, count(n) as Count
 UNION
@@ -976,8 +769,6 @@ MATCH ()-[r:STORED_IN]->() RETURN 'STORED_IN' as Type, count(r) as Count
 UNION
 MATCH ()-[r:CALLS]->() RETURN 'CALLS' as Type, count(r) as Count
 UNION
-MATCH ()-[r:ADDS]->() RETURN 'ADDS' as Type, count(r) as Count
+MATCH ()-[r:MODIFY]->() RETURN 'MODIFY' as Type, count(r) as Count
 UNION
-MATCH ()-[r:MODIFIES]->() RETURN 'MODIFIES' as Type, count(r) as Count
-UNION
-MATCH ()-[r:ENABLES]->() RETURN 'ENABLES' as Type, count(r) as Count;
+MATCH ()-[r:SUPPORTS]->() RETURN 'SUPPORTS' as Type, count(r) as Count;

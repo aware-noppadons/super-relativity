@@ -68,6 +68,260 @@ app.post('/api/sync/trigger', async (req, res) => {
   }
 });
 
+// Parse node type from ID prefix
+function parseNodeType(id) {
+  const prefix = id.split('-')[0];
+  const typeMap = {
+    'APP': 'Application',
+    'API': 'API',
+    'CAP': 'BusinessFunction',
+    'COMP': 'Component',
+    'DATA': 'DataObject',
+    'TBL': 'Table',
+    'SRV': 'Server',
+    'ACH': 'AppChange',
+    'ICH': 'InfraChange'
+  };
+  return typeMap[prefix] || 'Unknown';
+}
+
+// Validate relationship against Master Patterns and return specific relationship type
+// Reference: MASTER-PATTERNS.md v2.0
+function validateAndMapRelationship(rel) {
+  const relType = rel.type.toLowerCase();
+  const fromType = rel.fromType || parseNodeType(rel.from);
+  const toType = rel.toType || parseNodeType(rel.to);
+
+  // Helper to infer data access pattern from relationship type
+  const inferRW = (relTypeStr) => {
+    if (relTypeStr.includes('read') && !relTypeStr.includes('write')) return 'reads';
+    if (relTypeStr.includes('write') && !relTypeStr.includes('read')) return 'writes';
+    return 'read-n-writes'; // Default
+  };
+
+  // Helper to infer mode from relationship type
+  const inferMode = (relTypeStr) => {
+    if (relTypeStr.includes('push') || relTypeStr.includes('send') || relTypeStr.includes('publish')) return 'pushes';
+    if (relTypeStr.includes('pull') || relTypeStr.includes('fetch') || relTypeStr.includes('subscribe')) return 'pulls';
+    return 'pulls'; // Default for API calls
+  };
+
+  // Pattern 1: Application → Application (RELATES)
+  if (fromType === 'Application' && toType === 'Application') {
+    if (relType.includes('integrat') || relType.includes('connect') || relType.includes('link')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'RELATES',
+        properties: { description: `${rel.from} relates to ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 1: Application → API (CALLS)
+  if (fromType === 'Application' && toType === 'API') {
+    if (relType.includes('call') || relType.includes('use') || relType.includes('consume')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'CALLS',
+        properties: {
+          mode: inferMode(relType),
+          rw: inferRW(relType),
+          description: `${rel.from} calls ${rel.to}`
+        }
+      };
+    }
+  }
+
+  // Pattern 1: Application → BusinessFunction (OWNS)
+  if (fromType === 'Application' && toType === 'BusinessFunction') {
+    if (relType.includes('own') || relType.includes('support') || relType.includes('provide')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'OWNS',
+        properties: { description: `${rel.from} owns ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 1: Application → Component (OWNS)
+  if (fromType === 'Application' && toType === 'Component') {
+    if (relType.includes('own') || relType.includes('contain') || relType.includes('include')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'OWNS',
+        properties: { description: `${rel.from} owns ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 2: API → Component (EXPOSES)
+  if (fromType === 'API' && toType === 'Component') {
+    if (relType.includes('expose') || relType.includes('provide') || relType.includes('serve')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'EXPOSES',
+        properties: { description: `${rel.from} exposes ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 2: API → DataObject (WORKS_ON)
+  if (fromType === 'API' && toType === 'DataObject') {
+    if (relType.includes('work') || relType.includes('operate') || relType.includes('manipulate') ||
+        relType.includes('use') || relType.includes('read') || relType.includes('write')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'WORKS_ON',
+        properties: {
+          rw: inferRW(relType),
+          description: `${rel.from} works on ${rel.to}`
+        }
+      };
+    }
+  }
+
+  // Pattern 2 (Bidirectional): Component → API (CALLS)
+  if (fromType === 'Component' && toType === 'API') {
+    if (relType.includes('call') || relType.includes('use') || relType.includes('consume')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'CALLS',
+        properties: {
+          mode: inferMode(relType),
+          rw: inferRW(relType),
+          description: `${rel.from} calls ${rel.to}`
+        }
+      };
+    }
+  }
+
+  // Pattern 3: Component → BusinessFunction (IMPLEMENTS)
+  if (fromType === 'Component' && toType === 'BusinessFunction') {
+    if (relType.includes('implement') || relType.includes('realize') || relType.includes('execute')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'IMPLEMENTS',
+        properties: { description: `${rel.from} implements ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 4: BusinessFunction → API (INCLUDES)
+  if (fromType === 'BusinessFunction' && toType === 'API') {
+    if (relType.includes('include') || relType.includes('use') || relType.includes('leverage')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'INCLUDES',
+        properties: { description: `${rel.from} includes ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 5: AppChange → Component, BusinessFunction, DataObject (CHANGES)
+  if (fromType === 'AppChange' && ['Component', 'BusinessFunction', 'DataObject'].includes(toType)) {
+    return {
+      isAllowed: true,
+      relationshipType: 'CHANGES',
+      properties: { description: `${rel.from} changes ${rel.to}` }
+    };
+  }
+
+  // Pattern 6: Table → DataObject (MATERIALIZES)
+  if (fromType === 'Table' && toType === 'DataObject') {
+    if (relType.includes('materialize') || relType.includes('store') || relType.includes('persist')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'MATERIALIZES',
+        properties: { description: `${rel.from} materializes ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 7: Component → Server (INSTALLED_ON)
+  if (fromType === 'Component' && toType === 'Server') {
+    if (relType.includes('install') || relType.includes('deploy') || relType.includes('host') || relType.includes('run')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'INSTALLED_ON',
+        properties: { description: `${rel.from} installed on ${rel.to}` }
+      };
+    }
+  }
+
+  // Pattern 8: InfraChange → Server (CHANGES)
+  if (fromType === 'InfraChange' && toType === 'Server') {
+    return {
+      isAllowed: true,
+      relationshipType: 'CHANGES',
+      properties: { description: `${rel.from} changes ${rel.to}` }
+    };
+  }
+
+  // Pattern 9: Component → Component (RELATES or CONTAINS)
+  if (fromType === 'Component' && toType === 'Component') {
+    if (relType.includes('contain') || relType.includes('include')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'CONTAINS',
+        properties: { description: `${rel.from} contains ${rel.to}` }
+      };
+    }
+    // Default to RELATES for Component→Component (uses, depends, etc.)
+    return {
+      isAllowed: true,
+      relationshipType: 'RELATES',
+      properties: { description: `${rel.from} relates to ${rel.to}` }
+    };
+  }
+
+  // Pattern 10: Component → DataObject (WORKS_ON)
+  if (fromType === 'Component' && toType === 'DataObject') {
+    if (relType.includes('use') || relType.includes('read') || relType.includes('write') ||
+        relType.includes('modify') || relType.includes('inquire') || relType.includes('access') ||
+        relType.includes('work')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'WORKS_ON',
+        properties: {
+          rw: inferRW(relType),
+          description: `${rel.from} works on ${rel.to}`
+        }
+      };
+    }
+  }
+
+  // Pattern 10: BusinessFunction → DataObject (WORKS_ON)
+  if (fromType === 'BusinessFunction' && toType === 'DataObject') {
+    if (relType.includes('use') || relType.includes('manage') || relType.includes('read') ||
+        relType.includes('write') || relType.includes('access') || relType.includes('work')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'WORKS_ON',
+        properties: {
+          rw: inferRW(relType),
+          description: `${rel.from} works on ${rel.to}`
+        }
+      };
+    }
+  }
+
+  // Pattern 11: BusinessFunction → BusinessFunction (RELATES)
+  if (fromType === 'BusinessFunction' && toType === 'BusinessFunction') {
+    return {
+      isAllowed: true,
+      relationshipType: 'RELATES',
+      properties: {
+        mode: inferMode(relType),
+        description: `${rel.from} relates to ${rel.to}`
+      }
+    };
+  }
+
+  // WHITELIST APPROACH: Disallow all other relationship patterns
+  console.warn(`Disallowed pattern: ${fromType} → ${toType} (${relType})`);
+  return { isAllowed: false, relationshipType: null, properties: {} };
+}
+
 // Main sync function
 async function performSync() {
   const jobId = `sync-${Date.now()}`;
@@ -88,13 +342,13 @@ async function performSync() {
     let totalEntities = 0;
 
     try {
-      // 1. Sync Business Capabilities
-      console.log(`[${jobId}] Syncing business capabilities...`);
+      // 1. Sync Business Functions
+      console.log(`[${jobId}] Syncing business functions...`);
       const { data: capabilitiesData } = await axios.get(`${LEANIX_API_URL}/capabilities`);
       for (const cap of capabilitiesData.data || []) {
         await session.run(
           `
-          MERGE (c:BusinessCapability {id: $id})
+          MERGE (c:BusinessFunction {id: $id})
           SET c.name = $name,
               c.level = $level,
               c.description = $description,
@@ -116,53 +370,14 @@ async function performSync() {
           }
         );
       }
-      console.log(`[${jobId}] Synced ${capabilitiesData.data?.length || 0} business capabilities`);
+      console.log(`[${jobId}] Synced ${capabilitiesData.data?.length || 0} business functions`);
       totalEntities += capabilitiesData.data?.length || 0;
 
-      // 2. Sync Requirements
-      console.log(`[${jobId}] Syncing requirements...`);
-      const { data: requirementsData } = await axios.get(`${LEANIX_API_URL}/requirements`);
-      for (const req of requirementsData.data || []) {
-        await session.run(
-          `
-          MERGE (r:Requirement {id: $id})
-          SET r.name = $name,
-              r.type = $type,
-              r.priority = $priority,
-              r.status = $status,
-              r.owner = $owner,
-              r.description = $description,
-              r.createdDate = $createdDate,
-              r.compliance = $compliance,
-              r.lastSyncedAt = datetime()
-          `,
-          {
-            id: req.id,
-            name: req.name,
-            type: req.type || 'Functional Requirement',
-            priority: req.priority || 'Medium',
-            status: req.status || 'Draft',
-            owner: req.owner || '',
-            description: req.description || '',
-            createdDate: req.createdDate || '',
-            compliance: req.compliance || [],
-          }
-        );
-
-        // Link requirement to capability if exists
-        if (req.capability) {
-          await session.run(
-            `
-            MATCH (r:Requirement {id: $reqId})
-            MATCH (c:BusinessCapability {id: $capId})
-            MERGE (r)-[:SUPPORTS]->(c)
-            `,
-            { reqId: req.id, capId: req.capability }
-          );
-        }
-      }
-      console.log(`[${jobId}] Synced ${requirementsData.data?.length || 0} requirements`);
-      totalEntities += requirementsData.data?.length || 0;
+      // 2. Sync Requirements - REMOVED
+      // Requirement nodes are not part of the simplified schema.
+      // See schema definition: only Application, API, BusinessFunction,
+      // Component, DataObject, Table, Server, AppChange, InfraChange are allowed.
+      console.log(`[${jobId}] Skipping requirements (not in simplified schema)`);
 
       // 3. Sync Applications
       console.log(`[${jobId}] Syncing applications...`);
@@ -372,32 +587,50 @@ async function performSync() {
       console.log(`[${jobId}] Synced ${infraChangesData.data?.length || 0} infrastructure changes`);
       totalEntities += infraChangesData.data?.length || 0;
 
-      // Fetch and sync relationships
+      // Fetch and sync relationships following the 11 patterns
       console.log(`[${jobId}] Fetching relationships from LeanIX...`);
       const { data: relationshipsData } = await axios.get(`${LEANIX_API_URL}/relationships`);
 
       let relationshipsSynced = 0;
+      let relationshipsSkipped = 0;
+
       for (const rel of relationshipsData.data || []) {
         try {
-          await session.run(
-            `
+          // Validate against Master Patterns and get specific relationship type
+          const { isAllowed, relationshipType, properties } = validateAndMapRelationship(rel);
+
+          if (!isAllowed) {
+            relationshipsSkipped++;
+            console.warn(`[${jobId}] Skipping disallowed relationship: ${rel.from} -[${rel.type}]-> ${rel.to}`);
+            continue;
+          }
+
+          // Build property SET clause dynamically
+          const propKeys = Object.keys(properties);
+          const propSetClauses = propKeys.map(key => `r.${key} = $${key}`).join(', ');
+          const cypherQuery = `
             MATCH (from {id: $fromId})
             MATCH (to {id: $toId})
-            MERGE (from)-[r:${rel.type.replace(/[^A-Z_]/g, '_')}]->(to)
-            SET r.syncedAt = datetime()
-            `,
-            {
-              fromId: rel.from,
-              toId: rel.to,
-            }
-          );
+            MERGE (from)-[r:${relationshipType}]->(to)
+            ${propSetClauses ? `SET ${propSetClauses},` : 'SET'} r.syncedAt = datetime()
+          `;
+
+          // Build parameters object
+          const params = {
+            fromId: rel.from,
+            toId: rel.to,
+            ...properties
+          };
+
+          await session.run(cypherQuery, params);
           relationshipsSynced++;
+          console.log(`[${jobId}] Created ${relationshipType}: ${rel.from} → ${rel.to}`);
         } catch (error) {
           console.warn(`[${jobId}] Failed to create relationship ${rel.from} -[${rel.type}]-> ${rel.to}: ${error.message}`);
         }
       }
 
-      console.log(`[${jobId}] Successfully synced ${relationshipsSynced} relationships to Neo4j`);
+      console.log(`[${jobId}] Successfully synced ${relationshipsSynced} relationships to Neo4j (${relationshipsSkipped} skipped as disallowed)`);
     } finally {
       await session.close();
     }

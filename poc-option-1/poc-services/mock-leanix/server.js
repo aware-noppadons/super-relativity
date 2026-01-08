@@ -846,142 +846,110 @@ function initializeDefaultData() {
     }
   ];
 
-  // Sample Relationships
+  // Sample Relationships - Using MASTER-PATTERNS v2.0
   relationships = [
-    // Requirements Support Business Capabilities
-    { from: 'REQ-001', to: 'CAP-001', type: 'SUPPORTS' },  // Enable self-service supports Customer Onboarding
-    { from: 'REQ-002', to: 'CAP-004', type: 'SUPPORTS' },  // Real-time tracking supports Customer Service
-    { from: 'REQ-003', to: 'CAP-003', type: 'SUPPORTS' },  // Secure storage supports Document Management
+    // NOTE: Requirements removed from simplified schema - all REQ-xxx relationships deleted
 
-    // Requirements to Components (technical implementation)
-    { from: 'REQ-001', to: 'COMP-001', type: 'IMPLEMENTED_BY' },  // Self-service submission by Registration Form
-    { from: 'REQ-001', to: 'COMP-003', type: 'IMPLEMENTED_BY' },  // Authentication for submission
-    { from: 'REQ-002', to: 'COMP-002', type: 'IMPLEMENTED_BY' },  // Status tracking by Status Dashboard
-    { from: 'REQ-002', to: 'COMP-003', type: 'IMPLEMENTED_BY' },  // Authentication for status viewing
-    { from: 'REQ-003', to: 'COMP-007', type: 'IMPLEMENTED_BY' },  // Document upload by Upload Handler
-    { from: 'REQ-003', to: 'COMP-008', type: 'IMPLEMENTED_BY' },  // Document retrieval by Retrieval Service
+    // Applications Own Business Capabilities (Pattern 1)
+    { from: 'APP-123', to: 'CAP-001', type: 'OWNS', description: 'Customer Portal owns Customer Onboarding' },
+    { from: 'APP-123', to: 'CAP-004', type: 'OWNS', description: 'Customer Portal owns Customer Service & Support' },
+    { from: 'APP-456', to: 'CAP-002', type: 'OWNS', description: 'App Processing API owns Application Processing' },
+    { from: 'APP-567', to: 'CAP-006', type: 'OWNS', description: 'Fraud Detection Engine owns Risk Assessment' },
+    { from: 'APP-789', to: 'CAP-003', type: 'OWNS', description: 'Doc Management Service owns Document Management' },
+    { from: 'APP-890', to: 'CAP-008', type: 'OWNS', description: 'Analytics Dashboard owns Analytics & BI' },
+    { from: 'APP-901', to: 'CAP-005', type: 'OWNS', description: 'Payment Gateway owns Payment Processing' },
+    { from: 'APP-012', to: 'CAP-007', type: 'OWNS', description: 'Reporting Engine owns Compliance & Reporting' },
 
-    // Applications Satisfy Requirements
-    { from: 'APP-123', to: 'REQ-001', type: 'SATISFIES' },  // Customer Portal satisfies self-service submission
-    { from: 'APP-123', to: 'REQ-002', type: 'SATISFIES' },  // Customer Portal satisfies real-time status tracking
-    { from: 'APP-789', to: 'REQ-003', type: 'SATISFIES' },  // Doc Management Service satisfies secure document storage
+    // Applications Own Components (Pattern 1)
+    { from: 'APP-123', to: 'COMP-001', type: 'OWNS', description: 'Customer Portal owns Registration Form' },
+    { from: 'APP-123', to: 'COMP-002', type: 'OWNS', description: 'Customer Portal owns Status Dashboard' },
+    { from: 'APP-123', to: 'COMP-003', type: 'OWNS', description: 'Customer Portal owns Authentication Service' },
+    { from: 'APP-456', to: 'COMP-004', type: 'OWNS', description: 'App Processing API owns Application Validator' },
+    { from: 'APP-456', to: 'COMP-005', type: 'OWNS', description: 'App Processing API owns Fraud Detector' },
+    { from: 'APP-456', to: 'COMP-006', type: 'OWNS', description: 'App Processing API owns Customer Lookup Service' },
+    { from: 'APP-789', to: 'COMP-007', type: 'OWNS', description: 'Doc Management Service owns Document Upload Handler' },
+    { from: 'APP-789', to: 'COMP-008', type: 'OWNS', description: 'Doc Management Service owns Document Retrieval Service' },
 
-    // Applications Implement Business Capabilities
-    { from: 'APP-123', to: 'CAP-001', type: 'IMPLEMENTS_CAPABILITY' },  // Customer Portal implements Customer Onboarding
-    { from: 'APP-123', to: 'CAP-004', type: 'IMPLEMENTS_CAPABILITY' },  // Customer Portal implements Customer Service & Support
-    { from: 'APP-456', to: 'CAP-002', type: 'IMPLEMENTS_CAPABILITY' },  // App Processing API implements Application Processing
-    { from: 'APP-567', to: 'CAP-006', type: 'IMPLEMENTS_CAPABILITY' },  // Fraud Detection Engine implements Risk Assessment
-    { from: 'APP-789', to: 'CAP-003', type: 'IMPLEMENTS_CAPABILITY' },  // Doc Management Service implements Document Management
-    { from: 'APP-890', to: 'CAP-008', type: 'IMPLEMENTS_CAPABILITY' },  // Analytics Dashboard implements Analytics & BI
-    { from: 'APP-901', to: 'CAP-005', type: 'IMPLEMENTS_CAPABILITY' },  // Payment Gateway implements Payment Processing
-    { from: 'APP-012', to: 'CAP-007', type: 'IMPLEMENTS_CAPABILITY' },  // Reporting Engine implements Compliance & Reporting
+    // Components Implement Business Capabilities (Pattern 3)
+    // NOTE: ENABLED_BY removed - reversed to IMPLEMENTS per MASTER-PATTERNS
+    { from: 'COMP-001', to: 'CAP-001', type: 'IMPLEMENTS', description: 'Registration Form implements Customer Onboarding' },
+    { from: 'COMP-003', to: 'CAP-001', type: 'IMPLEMENTS', description: 'Authentication Service implements Customer Onboarding' },
+    { from: 'COMP-004', to: 'CAP-002', type: 'IMPLEMENTS', description: 'Application Validator implements Application Processing' },
+    { from: 'COMP-005', to: 'CAP-002', type: 'IMPLEMENTS', description: 'Fraud Detector implements Application Processing' },
+    { from: 'COMP-006', to: 'CAP-002', type: 'IMPLEMENTS', description: 'Customer Lookup implements Application Processing' },
+    { from: 'COMP-007', to: 'CAP-003', type: 'IMPLEMENTS', description: 'Document Upload Handler implements Document Management' },
+    { from: 'COMP-008', to: 'CAP-003', type: 'IMPLEMENTS', description: 'Document Retrieval Service implements Document Management' },
+    { from: 'COMP-002', to: 'CAP-004', type: 'IMPLEMENTS', description: 'Status Dashboard implements Customer Service & Support' },
+    { from: 'COMP-003', to: 'CAP-004', type: 'IMPLEMENTS', description: 'Authentication Service implements Customer Service & Support' },
+    { from: 'COMP-005', to: 'CAP-006', type: 'IMPLEMENTS', description: 'Fraud Detector implements Risk Assessment & Fraud Detection' },
 
-    // Applications to Components
-    { from: 'APP-123', to: 'COMP-001', type: 'HAS_COMPONENT' },
-    { from: 'APP-123', to: 'COMP-002', type: 'HAS_COMPONENT' },
-    { from: 'APP-123', to: 'COMP-003', type: 'HAS_COMPONENT' },
-    { from: 'APP-456', to: 'COMP-004', type: 'HAS_COMPONENT' },
-    { from: 'APP-456', to: 'COMP-005', type: 'HAS_COMPONENT' },
-    { from: 'APP-456', to: 'COMP-006', type: 'HAS_COMPONENT' },
-    { from: 'APP-789', to: 'COMP-007', type: 'HAS_COMPONENT' },
-    { from: 'APP-789', to: 'COMP-008', type: 'HAS_COMPONENT' },
-
-    // Business Capabilities Enabled By Components
-    // Customer Onboarding enabled by registration and authentication
-    { from: 'CAP-001', to: 'COMP-001', type: 'ENABLED_BY' },  // Registration Form
-    { from: 'CAP-001', to: 'COMP-003', type: 'ENABLED_BY' },  // Authentication Service
-
-    // Application Processing enabled by validation, fraud detection, and customer lookup
-    { from: 'CAP-002', to: 'COMP-004', type: 'ENABLED_BY' },  // Application Validator
-    { from: 'CAP-002', to: 'COMP-005', type: 'ENABLED_BY' },  // Fraud Detector
-    { from: 'CAP-002', to: 'COMP-006', type: 'ENABLED_BY' },  // Customer Lookup Service
-
-    // Document Management enabled by upload and retrieval
-    { from: 'CAP-003', to: 'COMP-007', type: 'ENABLED_BY' },  // Document Upload Handler
-    { from: 'CAP-003', to: 'COMP-008', type: 'ENABLED_BY' },  // Document Retrieval Service
-
-    // Customer Service & Support enabled by status dashboard and authentication
-    { from: 'CAP-004', to: 'COMP-002', type: 'ENABLED_BY' },  // Status Dashboard
-    { from: 'CAP-004', to: 'COMP-003', type: 'ENABLED_BY' },  // Authentication Service
-
-    // Risk Assessment & Fraud Detection enabled by fraud detector
-    { from: 'CAP-006', to: 'COMP-005', type: 'ENABLED_BY' },  // Fraud Detector
-
-    // Component to Data Relationships (MODIFIES and READS)
+    // Component to Data Relationships - Using WORKS_ON (Pattern 10)
     // Customer Portal (APP-123) Component Data Relationships
-    { from: 'COMP-001', to: 'DATA-789', type: 'MODIFIES' },  // Registration Form modifies CustomerTable
-    { from: 'COMP-001', to: 'DATA-012', type: 'MODIFIES' },  // Registration Form modifies ApplicationTable
-    { from: 'COMP-001', to: 'DATA-678', type: 'MODIFIES' },  // Registration Form modifies UserSessionCache
-    { from: 'COMP-002', to: 'DATA-789', type: 'READS' },     // Status Dashboard reads CustomerTable
-    { from: 'COMP-002', to: 'DATA-012', type: 'READS' },     // Status Dashboard reads ApplicationTable
-    { from: 'COMP-003', to: 'DATA-789', type: 'READS' },     // Authentication reads CustomerTable
-    { from: 'COMP-003', to: 'DATA-678', type: 'READS' },     // Authentication reads UserSessionCache
+    { from: 'COMP-001', to: 'DATA-789', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Registration Form works on CustomerTable' },
+    { from: 'COMP-001', to: 'DATA-012', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Registration Form works on ApplicationTable' },
+    { from: 'COMP-001', to: 'DATA-678', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Registration Form works on UserSessionCache' },
+    { from: 'COMP-002', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Status Dashboard reads CustomerTable' },
+    { from: 'COMP-002', to: 'DATA-012', type: 'WORKS_ON', rw: 'reads', description: 'Status Dashboard reads ApplicationTable' },
+    { from: 'COMP-003', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Authentication reads CustomerTable' },
+    { from: 'COMP-003', to: 'DATA-678', type: 'WORKS_ON', rw: 'reads', description: 'Authentication reads UserSessionCache' },
 
     // Application Processing API (APP-456) Component Data Relationships
-    { from: 'COMP-004', to: 'DATA-012', type: 'MODIFIES' },  // Validator modifies ApplicationTable
-    { from: 'COMP-004', to: 'DATA-789', type: 'READS' },     // Validator reads CustomerTable
-    { from: 'COMP-005', to: 'DATA-012', type: 'READS' },     // Fraud Detector reads ApplicationTable
-    { from: 'COMP-005', to: 'DATA-789', type: 'READS' },     // Fraud Detector reads CustomerTable
-    { from: 'COMP-005', to: 'DATA-890', type: 'MODIFIES' },  // Fraud Detector modifies FraudScoresTable
-    { from: 'COMP-006', to: 'DATA-789', type: 'READS' },     // Customer Lookup reads CustomerTable
+    { from: 'COMP-004', to: 'DATA-012', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Validator works on ApplicationTable' },
+    { from: 'COMP-004', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Validator reads CustomerTable' },
+    { from: 'COMP-005', to: 'DATA-012', type: 'WORKS_ON', rw: 'reads', description: 'Fraud Detector reads ApplicationTable' },
+    { from: 'COMP-005', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Fraud Detector reads CustomerTable' },
+    { from: 'COMP-005', to: 'DATA-890', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Fraud Detector works on FraudScoresTable' },
+    { from: 'COMP-006', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Customer Lookup reads CustomerTable' },
 
     // Document Management (APP-789) Component Data Relationships
-    { from: 'COMP-007', to: 'DATA-345', type: 'MODIFIES' },  // Upload Handler modifies DocumentStorage
-    { from: 'COMP-007', to: 'DATA-567', type: 'MODIFIES' },  // Upload Handler modifies AuditLog
-    { from: 'COMP-008', to: 'DATA-345', type: 'READS' },     // Retrieval Service reads DocumentStorage
-    { from: 'COMP-008', to: 'DATA-567', type: 'MODIFIES' },  // Retrieval Service logs to AuditLog
+    { from: 'COMP-007', to: 'DATA-345', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Upload Handler works on DocumentStorage' },
+    { from: 'COMP-007', to: 'DATA-567', type: 'WORKS_ON', rw: 'writes', description: 'Upload Handler writes to AuditLog' },
+    { from: 'COMP-008', to: 'DATA-345', type: 'WORKS_ON', rw: 'reads', description: 'Retrieval Service reads DocumentStorage' },
+    { from: 'COMP-008', to: 'DATA-567', type: 'WORKS_ON', rw: 'writes', description: 'Retrieval Service writes to AuditLog' },
 
-    // Business Capability CRUD Operations on Data Objects
+    // Business Capability Operations on Data Objects - Using WORKS_ON (Pattern 10)
     // Customer Onboarding (CAP-001)
-    { from: 'CAP-001', to: 'DATA-789', type: 'CREATE' },      // Creates new customer records
-    { from: 'CAP-001', to: 'DATA-789', type: 'READ' },        // Reads customer data for validation
-    { from: 'CAP-001', to: 'DATA-678', type: 'CREATE' },      // Creates session cache entries
-    { from: 'CAP-001', to: 'DATA-345', type: 'CREATE' },      // Creates document storage entries
+    { from: 'CAP-001', to: 'DATA-789', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Customer Onboarding works on CustomerTable' },
+    { from: 'CAP-001', to: 'DATA-678', type: 'WORKS_ON', rw: 'writes', description: 'Customer Onboarding creates session cache' },
+    { from: 'CAP-001', to: 'DATA-345', type: 'WORKS_ON', rw: 'writes', description: 'Customer Onboarding creates documents' },
 
     // Application Processing (CAP-002)
-    { from: 'CAP-002', to: 'DATA-012', type: 'CREATE' },      // Creates new applications
-    { from: 'CAP-002', to: 'DATA-012', type: 'UPDATE' },      // Updates application status
-    { from: 'CAP-002', to: 'DATA-789', type: 'READ' },        // Reads customer data
-    { from: 'CAP-002', to: 'DATA-890', type: 'CREATE' },      // Creates fraud scores
-    { from: 'CAP-002', to: 'DATA-901', type: 'CREATE' },      // Creates notification queue entries
+    { from: 'CAP-002', to: 'DATA-012', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Application Processing works on ApplicationTable' },
+    { from: 'CAP-002', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Application Processing reads customer data' },
+    { from: 'CAP-002', to: 'DATA-890', type: 'WORKS_ON', rw: 'writes', description: 'Application Processing creates fraud scores' },
+    { from: 'CAP-002', to: 'DATA-901', type: 'WORKS_ON', rw: 'writes', description: 'Application Processing creates notifications' },
 
     // Document Management (CAP-003)
-    { from: 'CAP-003', to: 'DATA-345', type: 'CREATE' },      // Uploads documents
-    { from: 'CAP-003', to: 'DATA-345', type: 'READ' },        // Retrieves documents
-    { from: 'CAP-003', to: 'DATA-345', type: 'DEACTIVATE' },  // Archives/deletes documents
-    { from: 'CAP-003', to: 'DATA-567', type: 'CREATE' },      // Creates audit log entries
+    { from: 'CAP-003', to: 'DATA-345', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Document Management works on DocumentStorage' },
+    { from: 'CAP-003', to: 'DATA-567', type: 'WORKS_ON', rw: 'writes', description: 'Document Management creates audit logs' },
 
     // Customer Service & Support (CAP-004)
-    { from: 'CAP-004', to: 'DATA-789', type: 'READ' },        // Reads customer information
-    { from: 'CAP-004', to: 'DATA-012', type: 'READ' },        // Reads application status
-    { from: 'CAP-004', to: 'DATA-012', type: 'UPDATE' },      // Updates application details
-    { from: 'CAP-004', to: 'DATA-678', type: 'READ' },        // Reads session cache
+    { from: 'CAP-004', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Customer Service reads customer data' },
+    { from: 'CAP-004', to: 'DATA-012', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Customer Service works on applications' },
+    { from: 'CAP-004', to: 'DATA-678', type: 'WORKS_ON', rw: 'reads', description: 'Customer Service reads session cache' },
 
     // Payment Processing (CAP-005)
-    { from: 'CAP-005', to: 'DATA-456', type: 'CREATE' },      // Creates transactions
-    { from: 'CAP-005', to: 'DATA-456', type: 'READ' },        // Reads transaction history
-    { from: 'CAP-005', to: 'DATA-789', type: 'READ' },        // Reads customer payment info
-    { from: 'CAP-005', to: 'DATA-567', type: 'CREATE' },      // Creates audit log for payments
+    { from: 'CAP-005', to: 'DATA-456', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Payment Processing works on TransactionTable' },
+    { from: 'CAP-005', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Payment Processing reads customer data' },
+    { from: 'CAP-005', to: 'DATA-567', type: 'WORKS_ON', rw: 'writes', description: 'Payment Processing creates audit logs' },
 
     // Risk Assessment & Fraud Detection (CAP-006)
-    { from: 'CAP-006', to: 'DATA-890', type: 'CREATE' },      // Creates fraud scores
-    { from: 'CAP-006', to: 'DATA-890', type: 'UPDATE' },      // Updates fraud scores
-    { from: 'CAP-006', to: 'DATA-789', type: 'READ' },        // Reads customer data for analysis
-    { from: 'CAP-006', to: 'DATA-012', type: 'READ' },        // Reads application data
-    { from: 'CAP-006', to: 'DATA-456', type: 'READ' },        // Reads transaction data
+    { from: 'CAP-006', to: 'DATA-890', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Fraud Detection works on FraudScoresTable' },
+    { from: 'CAP-006', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Fraud Detection reads customer data' },
+    { from: 'CAP-006', to: 'DATA-012', type: 'WORKS_ON', rw: 'reads', description: 'Fraud Detection reads application data' },
+    { from: 'CAP-006', to: 'DATA-456', type: 'WORKS_ON', rw: 'reads', description: 'Fraud Detection reads transaction data' },
 
     // Compliance & Reporting (CAP-007)
-    { from: 'CAP-007', to: 'DATA-567', type: 'READ' },        // Reads audit logs
-    { from: 'CAP-007', to: 'DATA-789', type: 'READ' },        // Reads customer data for reports
-    { from: 'CAP-007', to: 'DATA-456', type: 'READ' },        // Reads transaction data
-    { from: 'CAP-007', to: 'DATA-345', type: 'READ' },        // Reads documents for compliance
+    { from: 'CAP-007', to: 'DATA-567', type: 'WORKS_ON', rw: 'reads', description: 'Compliance reads audit logs' },
+    { from: 'CAP-007', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Compliance reads customer data' },
+    { from: 'CAP-007', to: 'DATA-456', type: 'WORKS_ON', rw: 'reads', description: 'Compliance reads transaction data' },
+    { from: 'CAP-007', to: 'DATA-345', type: 'WORKS_ON', rw: 'reads', description: 'Compliance reads documents' },
 
     // Analytics & Business Intelligence (CAP-008)
-    { from: 'CAP-008', to: 'DATA-123', type: 'CREATE' },      // Creates analytics records
-    { from: 'CAP-008', to: 'DATA-123', type: 'READ' },        // Reads analytics data
-    { from: 'CAP-008', to: 'DATA-789', type: 'READ' },        // Reads customer data
-    { from: 'CAP-008', to: 'DATA-012', type: 'READ' },        // Reads application data
-    { from: 'CAP-008', to: 'DATA-456', type: 'READ' },        // Reads transaction data
+    { from: 'CAP-008', to: 'DATA-123', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Analytics works on DataWarehouse' },
+    { from: 'CAP-008', to: 'DATA-789', type: 'WORKS_ON', rw: 'reads', description: 'Analytics reads customer data' },
+    { from: 'CAP-008', to: 'DATA-012', type: 'WORKS_ON', rw: 'reads', description: 'Analytics reads application data' },
+    { from: 'CAP-008', to: 'DATA-456', type: 'WORKS_ON', rw: 'reads', description: 'Analytics reads transaction data' },
 
     // Component Installations on Servers (INSTALLED_ON)
     // Production deployments
@@ -1020,78 +988,54 @@ function initializeDefaultData() {
     { from: 'COMP-001', to: 'SRV-014', type: 'INSTALLED_ON' },  // Registration Form on nft-perf-01
     { from: 'COMP-003', to: 'SRV-014', type: 'INSTALLED_ON' },  // Auth Service on nft-perf-01
 
-    // Server-to-Server Relationships
-    // Load Balancing relationships (production)
-    { from: 'SRV-001', to: 'SRV-002', type: 'LOAD_BALANCES_WITH' },  // Web servers load balance
-    { from: 'SRV-002', to: 'SRV-001', type: 'LOAD_BALANCES_WITH' },
-    { from: 'SRV-003', to: 'SRV-004', type: 'LOAD_BALANCES_WITH' },  // API servers load balance
-    { from: 'SRV-004', to: 'SRV-003', type: 'LOAD_BALANCES_WITH' },
+    // NOTE: Server→Server relationships removed (WORKS_WITH, LOAD_BALANCES_WITH)
+    // Per MASTER-PATTERNS.md: Server nodes are leaf nodes with no outgoing relationships
 
-    // Work-together relationships (production architecture)
-    { from: 'SRV-001', to: 'SRV-003', type: 'WORKS_WITH' },  // Web server works with API server
-    { from: 'SRV-002', to: 'SRV-003', type: 'WORKS_WITH' },  // Web server works with API server
-    { from: 'SRV-001', to: 'SRV-004', type: 'WORKS_WITH' },  // Web server works with API server
-    { from: 'SRV-002', to: 'SRV-004', type: 'WORKS_WITH' },  // Web server works with API server
-    { from: 'SRV-003', to: 'SRV-005', type: 'WORKS_WITH' },  // API server works with database
-    { from: 'SRV-004', to: 'SRV-005', type: 'WORKS_WITH' },  // API server works with database
-    { from: 'SRV-003', to: 'SRV-006', type: 'WORKS_WITH' },  // API server works with cache
-    { from: 'SRV-004', to: 'SRV-006', type: 'WORKS_WITH' },  // API server works with cache
-    { from: 'SRV-003', to: 'SRV-007', type: 'WORKS_WITH' },  // API server works with fraud detection
-    { from: 'SRV-004', to: 'SRV-007', type: 'WORKS_WITH' },  // API server works with fraud detection
-    { from: 'SRV-003', to: 'SRV-008', type: 'WORKS_WITH' },  // API server works with document service
-    { from: 'SRV-004', to: 'SRV-008', type: 'WORKS_WITH' },  // API server works with document service
+    // AppChange to Component (Pattern 5 - uses CHANGES)
+    { from: 'ACH-001', to: 'COMP-001', type: 'CHANGES', description: 'Payment API changes Registration Form' },
+    { from: 'ACH-002', to: 'COMP-005', type: 'CHANGES', description: 'Fraud enhancement changes Fraud Detector' },
+    { from: 'ACH-003', to: 'COMP-001', type: 'CHANGES', description: 'UI Redesign changes Registration Form' },
+    { from: 'ACH-003', to: 'COMP-002', type: 'CHANGES', description: 'UI Redesign changes Status Dashboard' },
+    { from: 'ACH-004', to: 'COMP-007', type: 'CHANGES', description: 'S3 Migration changes Document Upload' },
+    { from: 'ACH-004', to: 'COMP-008', type: 'CHANGES', description: 'S3 Migration changes Document Retrieval' },
+    { from: 'ACH-005', to: 'COMP-002', type: 'CHANGES', description: 'Analytics Dashboard changes Status Dashboard' },
+    { from: 'ACH-006', to: 'COMP-003', type: 'CHANGES', description: 'Auth deprecation changes Authentication Service' },
 
-    // UAT environment work-together
-    { from: 'SRV-009', to: 'SRV-010', type: 'WORKS_WITH' },  // UAT web works with UAT API
+    // AppChange to BusinessCapability (Pattern 5 - uses CHANGES)
+    { from: 'ACH-001', to: 'CAP-005', type: 'CHANGES', description: 'Payment API changes Payment Processing' },
+    { from: 'ACH-002', to: 'CAP-006', type: 'CHANGES', description: 'Fraud enhancement changes Risk Assessment' },
+    { from: 'ACH-003', to: 'CAP-001', type: 'CHANGES', description: 'UI Redesign changes Customer Onboarding' },
+    { from: 'ACH-003', to: 'CAP-004', type: 'CHANGES', description: 'UI Redesign changes Customer Service' },
+    { from: 'ACH-004', to: 'CAP-003', type: 'CHANGES', description: 'S3 Migration changes Document Management' },
+    { from: 'ACH-005', to: 'CAP-008', type: 'CHANGES', description: 'Analytics Dashboard changes Analytics & BI' },
+    { from: 'ACH-006', to: 'CAP-001', type: 'CHANGES', description: 'Auth deprecation changes Customer Onboarding' },
+    { from: 'ACH-006', to: 'CAP-004', type: 'CHANGES', description: 'Auth deprecation changes Customer Service' },
 
-    // SIT environment work-together
-    { from: 'SRV-011', to: 'SRV-012', type: 'WORKS_WITH' },  // SIT web works with SIT API
+    // AppChange to DataObject (Pattern 5 - uses CHANGES)
+    { from: 'ACH-001', to: 'DATA-456', type: 'CHANGES', description: 'Payment API changes Transactions' },
+    { from: 'ACH-002', to: 'DATA-890', type: 'CHANGES', description: 'Fraud enhancement changes FraudScores' },
+    { from: 'ACH-002', to: 'DATA-456', type: 'CHANGES', description: 'Fraud enhancement changes Transactions' },
+    { from: 'ACH-004', to: 'DATA-345', type: 'CHANGES', description: 'S3 Migration changes DocumentStore' },
+    { from: 'ACH-005', to: 'DATA-123', type: 'CHANGES', description: 'Analytics Dashboard changes Analytics' },
+    { from: 'ACH-005', to: 'DATA-789', type: 'CHANGES', description: 'Analytics Dashboard changes CustomerTable' },
+    { from: 'ACH-005', to: 'DATA-456', type: 'CHANGES', description: 'Analytics Dashboard changes Transactions' },
+    { from: 'ACH-006', to: 'DATA-789', type: 'CHANGES', description: 'Auth deprecation changes CustomerTable' },
 
-    // AppChange to Component (mandatory)
-    { from: 'ACH-001', to: 'COMP-001', type: 'IMPACTS' },  // Payment API impacts Registration Form
-    { from: 'ACH-002', to: 'COMP-005', type: 'IMPACTS' },  // Fraud enhancement impacts Fraud Detector
-    { from: 'ACH-003', to: 'COMP-001', type: 'IMPACTS' },  // UI Redesign impacts Registration Form
-    { from: 'ACH-003', to: 'COMP-002', type: 'IMPACTS' },  // UI Redesign impacts Status Dashboard
-    { from: 'ACH-004', to: 'COMP-007', type: 'IMPACTS' },  // S3 Migration impacts Document Upload
-    { from: 'ACH-004', to: 'COMP-008', type: 'IMPACTS' },  // S3 Migration impacts Document Retrieval
-    { from: 'ACH-005', to: 'COMP-002', type: 'IMPACTS' },  // Analytics Dashboard impacts Status Dashboard
-    { from: 'ACH-006', to: 'COMP-003', type: 'IMPACTS' },  // Auth deprecation impacts Authentication Service
-
-    // AppChange to BusinessCapability (mandatory)
-    { from: 'ACH-001', to: 'CAP-005', type: 'ENABLES' },  // Payment API enables Payment Processing
-    { from: 'ACH-002', to: 'CAP-006', type: 'ENHANCES' },  // Fraud enhancement enhances Risk Assessment
-    { from: 'ACH-003', to: 'CAP-001', type: 'ENHANCES' },  // UI Redesign enhances Customer Onboarding
-    { from: 'ACH-003', to: 'CAP-004', type: 'ENHANCES' },  // UI Redesign enhances Customer Service
-    { from: 'ACH-004', to: 'CAP-003', type: 'ENHANCES' },  // S3 Migration enhances Document Management
-    { from: 'ACH-005', to: 'CAP-008', type: 'ENABLES' },  // Analytics Dashboard enables Analytics & BI
-    { from: 'ACH-006', to: 'CAP-001', type: 'IMPACTS' },  // Auth deprecation impacts Customer Onboarding
-    { from: 'ACH-006', to: 'CAP-004', type: 'IMPACTS' },  // Auth deprecation impacts Customer Service
-
-    // AppChange to DataObject (sometimes)
-    { from: 'ACH-001', to: 'DATA-456', type: 'MODIFIES' },  // Payment API modifies Transactions
-    { from: 'ACH-002', to: 'DATA-890', type: 'MODIFIES' },  // Fraud enhancement modifies FraudScores
-    { from: 'ACH-002', to: 'DATA-456', type: 'READS' },  // Fraud enhancement reads Transactions
-    { from: 'ACH-004', to: 'DATA-345', type: 'MIGRATES' },  // S3 Migration migrates DocumentStore
-    { from: 'ACH-005', to: 'DATA-123', type: 'MODIFIES' },  // Analytics Dashboard modifies Analytics
-    { from: 'ACH-005', to: 'DATA-789', type: 'READS' },  // Analytics Dashboard reads CustomerTable
-    { from: 'ACH-005', to: 'DATA-456', type: 'READS' },  // Analytics Dashboard reads Transactions
-    { from: 'ACH-006', to: 'DATA-789', type: 'MODIFIES' },  // Auth deprecation modifies CustomerTable
-
-    // InfraChange to Server
-    { from: 'ICH-001', to: 'SRV-001', type: 'UPGRADES' },  // OS Upgrade on web-prod-01
-    { from: 'ICH-001', to: 'SRV-002', type: 'UPGRADES' },  // OS Upgrade on web-prod-02
-    { from: 'ICH-002', to: 'SRV-003', type: 'SCALES' },  // Scaling api-prod-01
-    { from: 'ICH-002', to: 'SRV-004', type: 'SCALES' },  // Scaling api-prod-02
-    { from: 'ICH-003', to: 'SRV-005', type: 'UPGRADES' },  // Memory upgrade on db-prod-01
-    { from: 'ICH-004', to: 'SRV-001', type: 'PATCHES' },  // Security patches on all servers
-    { from: 'ICH-004', to: 'SRV-002', type: 'PATCHES' },
-    { from: 'ICH-004', to: 'SRV-003', type: 'PATCHES' },
-    { from: 'ICH-004', to: 'SRV-004', type: 'PATCHES' },
-    { from: 'ICH-004', to: 'SRV-005', type: 'PATCHES' },
-    { from: 'ICH-004', to: 'SRV-006', type: 'PATCHES' },
-    { from: 'ICH-004', to: 'SRV-007', type: 'PATCHES' },
-    { from: 'ICH-004', to: 'SRV-008', type: 'PATCHES' },
-    { from: 'ICH-005', to: 'SRV-014', type: 'DECOMMISSIONS' }  // Decommission nft-perf-01
+    // InfraChange to Server (Pattern 8 - uses CHANGES)
+    { from: 'ICH-001', to: 'SRV-001', type: 'CHANGES', description: 'OS Upgrade changes web-prod-01' },
+    { from: 'ICH-001', to: 'SRV-002', type: 'CHANGES', description: 'OS Upgrade changes web-prod-02' },
+    { from: 'ICH-002', to: 'SRV-003', type: 'CHANGES', description: 'Scaling changes api-prod-01' },
+    { from: 'ICH-002', to: 'SRV-004', type: 'CHANGES', description: 'Scaling changes api-prod-02' },
+    { from: 'ICH-003', to: 'SRV-005', type: 'CHANGES', description: 'Memory upgrade changes db-prod-01' },
+    { from: 'ICH-004', to: 'SRV-001', type: 'CHANGES', description: 'Security patches change web-prod-01' },
+    { from: 'ICH-004', to: 'SRV-002', type: 'CHANGES', description: 'Security patches change web-prod-02' },
+    { from: 'ICH-004', to: 'SRV-003', type: 'CHANGES', description: 'Security patches change api-prod-01' },
+    { from: 'ICH-004', to: 'SRV-004', type: 'CHANGES', description: 'Security patches change api-prod-02' },
+    { from: 'ICH-004', to: 'SRV-005', type: 'CHANGES', description: 'Security patches change db-prod-01' },
+    { from: 'ICH-004', to: 'SRV-006', type: 'CHANGES', description: 'Security patches change cache-prod-01' },
+    { from: 'ICH-004', to: 'SRV-007', type: 'CHANGES', description: 'Security patches change fraud-prod-01' },
+    { from: 'ICH-004', to: 'SRV-008', type: 'CHANGES', description: 'Security patches change docs-prod-01' },
+    { from: 'ICH-005', to: 'SRV-014', type: 'CHANGES', description: 'Decommission changes nft-perf-01' }
   ];
 }
 
