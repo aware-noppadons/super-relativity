@@ -953,17 +953,8 @@ function initializeDefaultData() {
     { from: 'APP-789', to: 'API-003', type: 'CALLS', mode: 'pushes', rw: 'read-n-writes', description: 'Doc Management calls Document API' },
     { from: 'APP-890', to: 'API-004', type: 'CALLS', mode: 'pulls', rw: 'reads', description: 'Analytics Dashboard calls Transaction API' },
 
-    // Component to API CALLS (Pattern 2)
-    { from: 'COMP-001', to: 'API-001', type: 'CALLS', mode: 'pushes', rw: 'writes', description: 'Registration Form calls Customer API' },
-    { from: 'COMP-006', to: 'API-001', type: 'CALLS', mode: 'pulls', rw: 'reads', description: 'Customer Lookup calls Customer API' },
-    { from: 'COMP-007', to: 'API-003', type: 'CALLS', mode: 'pushes', rw: 'writes', description: 'Upload Handler calls Document API' },
-    { from: 'COMP-008', to: 'API-003', type: 'CALLS', mode: 'pulls', rw: 'reads', description: 'Retrieval Service calls Document API' },
-
-    // API to Component EXPOSES (Pattern 4)
-    { from: 'API-001', to: 'COMP-006', type: 'EXPOSES', description: 'Customer API exposes Customer Lookup Service' },
-    { from: 'API-002', to: 'COMP-001', type: 'EXPOSES', description: 'Payment API exposes Registration Form' },
-    { from: 'API-003', to: 'COMP-007', type: 'EXPOSES', description: 'Document API exposes Upload Handler' },
-    { from: 'API-003', to: 'COMP-008', type: 'EXPOSES', description: 'Document API exposes Retrieval Service' },
+    // NOTE: Component→API CALLS relationships moved to diagrams (customer-portal-components.md)
+    // NOTE: API→Component EXPOSES relationships moved to diagrams (api-container-diagram.md)
 
     // Component to Data Relationships - Using WORKS_ON (Pattern 10)
     // Customer Portal (APP-123) Component Data Relationships
@@ -1117,37 +1108,13 @@ function initializeDefaultData() {
     { from: 'ICH-004', to: 'SRV-006', type: 'CHANGES', description: 'Security patches change cache-prod-01' },
     { from: 'ICH-004', to: 'SRV-007', type: 'CHANGES', description: 'Security patches change fraud-prod-01' },
     { from: 'ICH-004', to: 'SRV-008', type: 'CHANGES', description: 'Security patches change docs-prod-01' },
-    { from: 'ICH-005', to: 'SRV-014', type: 'CHANGES', description: 'Decommission changes nft-perf-01' },
+    { from: 'ICH-005', to: 'SRV-014', type: 'CHANGES', description: 'Decommission changes nft-perf-01' }
 
-    // BusinessFunction to BusinessFunction RELATES (Pattern 11)
-    { from: 'CAP-001', to: 'CAP-003', type: 'RELATES', mode: 'pushes', description: 'Customer Onboarding sends documents to Document Management' },
-    { from: 'CAP-002', to: 'CAP-004', type: 'RELATES', mode: 'pulls', description: 'Application Processing pulls customer data from Customer Service' },
-    { from: 'CAP-005', to: 'CAP-002', type: 'RELATES', mode: 'pushes', description: 'Payment Processing sends payment events to Application Processing' },
-    { from: 'CAP-006', to: 'CAP-002', type: 'RELATES', mode: 'pushes', description: 'Risk Assessment sends fraud scores to Application Processing' },
-
-    // Component to Component RELATES (Pattern 9)
-    { from: 'COMP-001', to: 'COMP-004', type: 'RELATES', description: 'Registration Form depends on Application Validator' },
-    { from: 'COMP-002', to: 'COMP-004', type: 'RELATES', description: 'Status Dashboard depends on Application Validator' },
-    { from: 'COMP-002', to: 'COMP-005', type: 'RELATES', description: 'Status Dashboard depends on Fraud Detector' },
-    { from: 'COMP-007', to: 'COMP-008', type: 'RELATES', description: 'Upload Handler relates to Retrieval Service' },
-
-    // Component to Component CONTAINS (Pattern 9)
-    { from: 'COMP-001', to: 'COMP-003', type: 'CONTAINS', description: 'Registration Form contains Authentication Service' },
-    { from: 'COMP-006', to: 'COMP-003', type: 'CONTAINS', description: 'Customer Lookup contains Authentication Service' },
-
-    // API to DataObject WORKS_ON (Pattern 2)
-    { from: 'API-001', to: 'DATA-789', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Customer API works on CustomerTable' },
-    { from: 'API-001', to: 'DATA-678', type: 'WORKS_ON', rw: 'reads', description: 'Customer API reads UserSessionCache' },
-    { from: 'API-002', to: 'DATA-456', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Payment API works on TransactionTable' },
-    { from: 'API-003', to: 'DATA-345', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Document API works on DocumentStorage' },
-    { from: 'API-003', to: 'DATA-567', type: 'WORKS_ON', rw: 'writes', description: 'Document API writes to AuditLog' },
-    { from: 'API-004', to: 'DATA-456', type: 'WORKS_ON', rw: 'reads', description: 'Transaction API reads TransactionTable' },
-
-    // BusinessFunction to API INCLUDES (Pattern 4)
-    { from: 'CAP-001', to: 'API-001', type: 'INCLUDES', description: 'Customer Onboarding includes Customer API' },
-    { from: 'CAP-002', to: 'API-002', type: 'INCLUDES', description: 'Application Processing includes Payment API' },
-    { from: 'CAP-003', to: 'API-003', type: 'INCLUDES', description: 'Document Management includes Document API' },
-    { from: 'CAP-008', to: 'API-004', type: 'INCLUDES', description: 'Analytics & BI includes Transaction API' }
+    // NOTE: Technical relationships moved to diagram files:
+    // - BusinessFunction→BusinessFunction RELATES → business-functions-api.md
+    // - Component→Component RELATES/CONTAINS → customer-portal-components.md
+    // - API→DataObject WORKS_ON → api-container-diagram.md
+    // - BusinessFunction→API INCLUDES → business-functions-api.md
   ];
 }
 
