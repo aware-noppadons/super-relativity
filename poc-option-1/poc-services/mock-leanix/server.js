@@ -23,6 +23,7 @@ let applications = [];
 let components = [];
 let requirements = [];
 let dataObjects = [];
+let apis = [];
 let infrastructure = [];
 let contextDiagrams = [];
 let relationships = [];
@@ -40,6 +41,7 @@ function loadSampleData() {
     components = data.components || [];
     requirements = data.requirements || [];
     dataObjects = data.dataObjects || [];
+    apis = data.apis || [];
     infrastructure = data.infrastructure || [];
     contextDiagrams = data.contextDiagrams || [];
     relationships = data.relationships || [];
@@ -51,6 +53,7 @@ function loadSampleData() {
     console.log(`   - ${components.length} components`);
     console.log(`   - ${requirements.length} requirements`);
     console.log(`   - ${dataObjects.length} data objects`);
+    console.log(`   - ${apis.length} APIs`);
     console.log(`   - ${infrastructure.length} infrastructure components`);
     console.log(`   - ${contextDiagrams.length} context diagrams`);
     console.log(`   - ${relationships.length} relationships`);
@@ -372,6 +375,62 @@ function initializeDefaultData() {
       sensitivity: 'Standard',
       retention: '7 days',
       application: 'APP-234'
+    }
+  ];
+
+  // Sample APIs
+  apis = [
+    {
+      id: 'API-001',
+      name: 'Customer API',
+      type: 'REST',
+      version: 'v2',
+      baseUrl: 'https://api.example.com/customers',
+      authentication: 'OAuth 2.0',
+      rateLimit: '1000 req/min',
+      description: 'Customer data access and management',
+      owner: 'Customer Experience Team',
+      lifecycle: 'Active',
+      application: 'APP-456'
+    },
+    {
+      id: 'API-002',
+      name: 'Payment API',
+      type: 'REST',
+      version: 'v1',
+      baseUrl: 'https://api.example.com/payments',
+      authentication: 'API Key',
+      rateLimit: '500 req/min',
+      description: 'Payment processing and transaction management',
+      owner: 'Finance Team',
+      lifecycle: 'Active',
+      application: 'APP-901'
+    },
+    {
+      id: 'API-003',
+      name: 'Document API',
+      type: 'REST',
+      version: 'v1',
+      baseUrl: 'https://api.example.com/documents',
+      authentication: 'JWT',
+      rateLimit: '2000 req/min',
+      description: 'Document upload, retrieval, and management',
+      owner: 'IT Operations',
+      lifecycle: 'Active',
+      application: 'APP-789'
+    },
+    {
+      id: 'API-004',
+      name: 'Transaction API',
+      type: 'REST',
+      version: 'v2',
+      baseUrl: 'https://api.example.com/transactions',
+      authentication: 'OAuth 2.0',
+      rateLimit: '1500 req/min',
+      description: 'Transaction history and reporting',
+      owner: 'Finance Team',
+      lifecycle: 'Active',
+      application: 'APP-901'
     }
   ];
 
@@ -883,6 +942,29 @@ function initializeDefaultData() {
     { from: 'COMP-003', to: 'CAP-004', type: 'IMPLEMENTS', description: 'Authentication Service implements Customer Service & Support' },
     { from: 'COMP-005', to: 'CAP-006', type: 'IMPLEMENTS', description: 'Fraud Detector implements Risk Assessment & Fraud Detection' },
 
+    // Application to Application RELATES (Pattern 1)
+    { from: 'APP-123', to: 'APP-678', type: 'RELATES', description: 'Customer Portal relates to Mobile App', mode: 'pulls' },
+    { from: 'APP-456', to: 'APP-123', type: 'RELATES', description: 'App Processing API relates to Customer Portal', mode: 'pushes' },
+
+    // Application to API CALLS (Pattern 2)
+    { from: 'APP-123', to: 'API-001', type: 'CALLS', mode: 'pulls', rw: 'reads', description: 'Customer Portal calls Customer API' },
+    { from: 'APP-678', to: 'API-001', type: 'CALLS', mode: 'pulls', rw: 'read-n-writes', description: 'Mobile App calls Customer API' },
+    { from: 'APP-901', to: 'API-002', type: 'CALLS', mode: 'pushes', rw: 'writes', description: 'Payment Gateway calls Payment API' },
+    { from: 'APP-789', to: 'API-003', type: 'CALLS', mode: 'pushes', rw: 'read-n-writes', description: 'Doc Management calls Document API' },
+    { from: 'APP-890', to: 'API-004', type: 'CALLS', mode: 'pulls', rw: 'reads', description: 'Analytics Dashboard calls Transaction API' },
+
+    // Component to API CALLS (Pattern 2)
+    { from: 'COMP-001', to: 'API-001', type: 'CALLS', mode: 'pushes', rw: 'writes', description: 'Registration Form calls Customer API' },
+    { from: 'COMP-006', to: 'API-001', type: 'CALLS', mode: 'pulls', rw: 'reads', description: 'Customer Lookup calls Customer API' },
+    { from: 'COMP-007', to: 'API-003', type: 'CALLS', mode: 'pushes', rw: 'writes', description: 'Upload Handler calls Document API' },
+    { from: 'COMP-008', to: 'API-003', type: 'CALLS', mode: 'pulls', rw: 'reads', description: 'Retrieval Service calls Document API' },
+
+    // API to Component EXPOSES (Pattern 4)
+    { from: 'API-001', to: 'COMP-006', type: 'EXPOSES', description: 'Customer API exposes Customer Lookup Service' },
+    { from: 'API-002', to: 'COMP-001', type: 'EXPOSES', description: 'Payment API exposes Registration Form' },
+    { from: 'API-003', to: 'COMP-007', type: 'EXPOSES', description: 'Document API exposes Upload Handler' },
+    { from: 'API-003', to: 'COMP-008', type: 'EXPOSES', description: 'Document API exposes Retrieval Service' },
+
     // Component to Data Relationships - Using WORKS_ON (Pattern 10)
     // Customer Portal (APP-123) Component Data Relationships
     { from: 'COMP-001', to: 'DATA-789', type: 'WORKS_ON', rw: 'read-n-writes', description: 'Registration Form works on CustomerTable' },
@@ -1204,6 +1286,20 @@ app.get('/data-objects/:id', (req, res) => {
     res.json({ data: obj });
   } else {
     res.status(404).json({ error: 'Data object not found' });
+  }
+});
+
+// APIs
+app.get('/apis', (req, res) => {
+  res.json({ data: apis, count: apis.length });
+});
+
+app.get('/apis/:id', (req, res) => {
+  const api = apis.find(a => a.id === req.params.id);
+  if (api) {
+    res.json({ data: api });
+  } else {
+    res.status(404).json({ error: 'API not found' });
   }
 });
 

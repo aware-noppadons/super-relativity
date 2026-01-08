@@ -154,6 +154,20 @@ function validateAndMapRelationship(rel) {
     }
   }
 
+  // Pattern 1: Application → Application (RELATES)
+  if (fromType === 'Application' && toType === 'Application') {
+    if (relType.includes('relate') || relType.includes('integrate') || relType.includes('connect')) {
+      return {
+        isAllowed: true,
+        relationshipType: 'RELATES',
+        properties: {
+          mode: inferMode(relType),
+          description: `${rel.from} relates to ${rel.to}`
+        }
+      };
+    }
+  }
+
   // Pattern 2: API → Component (EXPOSES)
   if (fromType === 'API' && toType === 'Component') {
     if (relType.includes('expose') || relType.includes('provide') || relType.includes('serve')) {
@@ -473,6 +487,43 @@ async function performSync() {
       }
       console.log(`[${jobId}] Synced ${componentsData.data?.length || 0} components`);
       totalEntities += componentsData.data?.length || 0;
+
+      // 5a. Sync APIs
+      console.log(`[${jobId}] Syncing APIs...`);
+      const { data: apisData } = await axios.get(`${LEANIX_API_URL}/apis`);
+      for (const api of apisData.data || []) {
+        await session.run(
+          `
+          MERGE (a:API {id: $id})
+          SET a.name = $name,
+              a.type = $type,
+              a.version = $version,
+              a.baseUrl = $baseUrl,
+              a.authentication = $authentication,
+              a.rateLimit = $rateLimit,
+              a.description = $description,
+              a.owner = $owner,
+              a.lifecycle = $lifecycle,
+              a.application = $application,
+              a.lastSyncedAt = datetime()
+          `,
+          {
+            id: api.id,
+            name: api.name,
+            type: api.type || 'REST',
+            version: api.version || 'v1',
+            baseUrl: api.baseUrl || '',
+            authentication: api.authentication || 'None',
+            rateLimit: api.rateLimit || '',
+            description: api.description || '',
+            owner: api.owner || '',
+            lifecycle: api.lifecycle || 'Active',
+            application: api.application || '',
+          }
+        );
+      }
+      console.log(`[${jobId}] Synced ${apisData.data?.length || 0} APIs`);
+      totalEntities += apisData.data?.length || 0;
 
       // 6. Sync Servers
       console.log(`[${jobId}] Syncing servers...`);
