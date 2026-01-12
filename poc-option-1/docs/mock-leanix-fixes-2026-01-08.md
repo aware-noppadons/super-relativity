@@ -1,5 +1,7 @@
 # Mock LeanIX Fixes - 2026-01-08
 
+> **📋 Historical Document**: This document reflects work completed on 2026-01-08, before schema simplification (2026-01-12). References to `Requirement` and `ContextDiagram` node types were subsequently removed from the schema. See `SCHEMA-DISCREPANCY-REPORT.md` for details.
+
 **Status**: ✅ COMPLETED
 **Impact**: HIGH - Fixed 91 skipped relationships, achieving 100% sync rate
 

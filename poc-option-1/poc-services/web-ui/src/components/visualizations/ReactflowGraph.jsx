@@ -11,7 +11,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 
 // Custom node components
-const BusinessCapabilityNode = ({ data }) => (
+const BusinessFunctionNode = ({ data }) => (
   <div style={{
     padding: '12px 20px',
     borderRadius: '8px',
@@ -31,7 +31,7 @@ const BusinessCapabilityNode = ({ data }) => (
       {data.criticality && `Criticality: ${data.criticality}`}
     </div>
     <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
-      BusinessCapability
+      BusinessFunction
     </div>
     <Handle type="source" position={Position.Right} />
   </div>
@@ -115,10 +115,13 @@ const ServerNode = ({ data }) => (
 );
 
 const nodeTypes = {
-  businessCapability: BusinessCapabilityNode,
+  businessFunction: BusinessFunctionNode,
   dataObject: DataObjectNode,
   component: ComponentNode,
-  businesscapability: BusinessCapabilityNode,
+  businessfunction: BusinessFunctionNode,
+  // Legacy aliases for backward compatibility
+  businessCapability: BusinessFunctionNode,
+  businesscapability: BusinessFunctionNode,
   server: ServerNode,
 };
 
@@ -128,15 +131,15 @@ function createSampleData() {
   const edges = [];
   let nodeId = 0;
 
-  // Level 0: BusinessCapability
+  // Level 0: BusinessFunction
   nodes.push({
     id: 'bc-1',
-    type: 'businessCapability',
+    type: 'businessFunction',
     data: {
       label: 'Payment Processing',
       criticality: 'Critical',
       level: 0,
-      nodeType: 'BusinessCapability',
+      nodeType: 'BusinessFunction',
       collapsible: true,
       collapsed: false,
     },
@@ -203,7 +206,7 @@ function createSampleData() {
         technology: comp.tech,
         criticality: comp.criticality,
         level: 2,
-        nodeType: comp.isCap ? 'BusinessCapability' : 'Component',
+        nodeType: comp.isCap ? 'BusinessFunction' : 'Component',
         parentId: comp.parentId,
         collapsible: !comp.isCap,
         collapsed: false,
@@ -387,7 +390,8 @@ function ReactflowGraph() {
         <MiniMap
           nodeColor={(node) => {
             switch (node.type) {
-              case 'businessCapability':
+              case 'businessFunction':
+              case 'businessCapability': // Legacy alias
                 return '#4CAF50';
               case 'dataObject':
                 return '#2196F3';

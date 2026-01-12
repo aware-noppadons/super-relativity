@@ -8,13 +8,13 @@ cytoscape.use(dagre);
 function createSampleData() {
   const elements = [];
 
-  // Level 0: BusinessCapability
+  // Level 0: BusinessFunction
   elements.push({
     group: 'nodes',
     data: {
       id: 'bc-1',
       label: 'Payment Processing',
-      nodeType: 'BusinessCapability',
+      nodeType: 'BusinessFunction',
       criticality: 'Critical',
       level: 0,
     },
@@ -58,7 +58,7 @@ function createSampleData() {
     { id: 'comp-2', label: 'Card Validator', tech: 'Java', parent: 'do-1', type: 'Component' },
     { id: 'comp-3', label: 'Audit Processor', tech: 'Python', parent: 'do-2', type: 'Component' },
     { id: 'comp-4', label: 'Cache Manager', tech: 'Redis', parent: 'do-3', type: 'Component' },
-    { id: 'bc-2', label: 'Fraud Detection', criticality: 'High', parent: 'do-1', type: 'BusinessCapability' },
+    { id: 'bc-2', label: 'Fraud Detection', criticality: 'High', parent: 'do-1', type: 'BusinessFunction' },
   ];
 
   components.forEach((comp) => {
@@ -152,7 +152,7 @@ function CytoscapeGraph() {
             'shape': 'roundrectangle',
           },
         },
-        // BusinessCapability nodes
+        // BusinessFunction nodes
         {
           selector: '.business-capability',
           style: {
@@ -294,7 +294,7 @@ function CytoscapeGraph() {
         <div style={{ marginTop: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
             <div style={{ width: '16px', height: '16px', background: '#4CAF50', marginRight: '5px', borderRadius: '2px' }}></div>
-            <span>BusinessCapability</span>
+            <span>BusinessFunction</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
             <div style={{ width: '16px', height: '16px', background: '#2196F3', marginRight: '5px', borderRadius: '2px' }}></div>

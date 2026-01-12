@@ -167,11 +167,11 @@ The system uses 11 primary relationship types defined in `MASTER-PATTERNS.md`:
 | **OWNS** | 1 | Source owns/contains target at business level | Application→Component |
 | **EXPOSES** | 4 | Source exposes/serves target | API→Component |
 | **WORKS_ON** | 2, 10 | Source reads/writes target data | API→DataObject, Component→DataObject |
-| **IMPLEMENTS** | 3 | Source implements target capability | Component→BusinessCapability |
+| **IMPLEMENTS** | 3 | Source implements target capability | Component→BusinessFunction |
 | **INCLUDES** | Pattern 7 | Source includes target | BusinessFunction→API |
 | **CHANGES** | 5, 8 | Source modifies target | AppChange→Component, InfraChange→Server |
-| **MATERIALIZES** | 6 | Source materializes into target | Requirement→Component |
-| **INSTALLED_ON** | - | Source deployed on target | Component→Server |
+| **MATERIALIZES** | 6 | Source materializes into target | Table→DataObject |
+| **INSTALLED_ON** | 7 | Source deployed on target | Component→Server |
 | **RELATES** | 1, 9, 11 | Generic relationship | Component→Component, BusinessFunction→BusinessFunction |
 | **CONTAINS** | 9 | Source contains target (composition) | Component→Component |
 
@@ -648,7 +648,7 @@ const diagramSources = [
 ];
 
 for (const source of diagramSources) {
-  await parseContextDiagramDirectory(source);
+  await parseDiagramDirectory(source);
 }
 
 // Or watch for changes
@@ -1188,10 +1188,12 @@ RETURN count(r);
 
 **Diagnosis:**
 
-1. Check if diagrams were parsed:
+1. Check if entities from diagrams were created:
 ```cypher
-MATCH (d:ContextDiagram)
-RETURN d.fileName, d.relationshipCount;
+MATCH (n)
+WHERE n.diagramFile IS NOT NULL
+RETURN DISTINCT n.diagramFile AS file, count(*) AS entityCount
+ORDER BY file;
 ```
 
 2. Check parser logs:

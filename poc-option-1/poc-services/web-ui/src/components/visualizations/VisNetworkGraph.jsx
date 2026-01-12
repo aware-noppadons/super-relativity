@@ -7,13 +7,13 @@ function createSampleData() {
   const nodes = [];
   const edges = [];
 
-  // Level 0: BusinessCapability
+  // Level 0: BusinessFunction
   nodes.push({
     id: 'bc-1',
     label: 'Payment Processing',
     level: 0,
-    group: 'BusinessCapability',
-    title: 'BusinessCapability\nCriticality: Critical',
+    group: 'BusinessFunction',
+    title: 'BusinessFunction\nCriticality: Critical',
     font: { size: 14, color: '#ffffff' },
   });
 
@@ -49,7 +49,7 @@ function createSampleData() {
     { id: 'comp-2', label: 'Card Validator', tech: 'Java', parent: 'do-1', group: 'Component' },
     { id: 'comp-3', label: 'Audit Processor', tech: 'Python', parent: 'do-2', group: 'Component' },
     { id: 'comp-4', label: 'Cache Manager', tech: 'Redis', parent: 'do-3', group: 'Component' },
-    { id: 'bc-2', label: 'Fraud Detection', criticality: 'High', parent: 'do-1', group: 'BusinessCapability' },
+    { id: 'bc-2', label: 'Fraud Detection', criticality: 'High', parent: 'do-1', group: 'BusinessFunction' },
   ];
 
   components.forEach((comp) => {
@@ -60,7 +60,7 @@ function createSampleData() {
       group: comp.group,
       title: comp.group === 'Component'
         ? `Component\nTechnology: ${comp.tech}`
-        : `BusinessCapability\nCriticality: ${comp.criticality}`,
+        : `BusinessFunction\nCriticality: ${comp.criticality}`,
       font: { size: 14, color: '#ffffff' },
     });
 
@@ -206,7 +206,7 @@ function VisNetworkGraph() {
         },
       },
       groups: {
-        BusinessCapability: {
+        BusinessFunction: {
           color: {
             background: '#4CAF50',
             border: '#388E3C',
@@ -379,7 +379,7 @@ function VisNetworkGraph() {
         <div style={{ marginTop: '12px', borderTop: '1px solid #ddd', paddingTop: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
             <div style={{ width: '18px', height: '18px', background: '#4CAF50', marginRight: '6px', borderRadius: '3px' }}></div>
-            <span style={{ fontSize: '11px' }}>BusinessCapability</span>
+            <span style={{ fontSize: '11px' }}>BusinessFunction</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
             <div style={{ width: '18px', height: '18px', background: '#2196F3', marginRight: '6px', borderRadius: '3px' }}></div>

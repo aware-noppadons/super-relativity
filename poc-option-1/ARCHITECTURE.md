@@ -105,7 +105,7 @@ sequenceDiagram
     R-->>S: Lock acquired
 
     S->>M: GET /sync/all
-    M-->>S: All entities (JSON)<br/>- 8 Capabilities<br/>- 5 Requirements<br/>- 10 Applications<br/>- 12 Data Objects<br/>- 8 Infrastructure<br/>- 100+ Relationships
+    M-->>S: All entities (JSON)<br/>- 8 Business Functions<br/>- 10 Applications<br/>- 6 APIs<br/>- 12 Data Objects<br/>- 8 Servers<br/>- Change Tracking (AppChange, InfraChange)<br/>- 100+ Relationships
 
     loop For each entity type
         S->>N: MERGE nodes (Cypher)
@@ -227,7 +227,7 @@ sequenceDiagram
 
     W-->>U: Display interactive graph
 
-    Note over U: User sees:<br/>- Requirements impacted<br/>- Data objects used<br/>- Infrastructure dependencies<br/>- Dependent applications
+    Note over U: User sees:<br/>- APIs exposed<br/>- Data objects accessed<br/>- Server dependencies<br/>- Recent changes<br/>- Dependent applications
 ```
 
 ### Flow 5: Real-time Compliance Query
@@ -299,14 +299,14 @@ graph LR
 ```mermaid
 graph TB
     subgraph "GraphQL API - Query Resolution"
-        Query[GraphQL Query<br/>applications with requirements]
+        Query[GraphQL Query<br/>applications with APIs and data]
 
         Query --> R1[Resolver: applications]
         R1 --> Cache1{Cache Check}
         Cache1 -->|Hit| Return1[Return Cached]
         Cache1 -->|Miss| Neo1[Query Neo4j:<br/>MATCH :Application]
 
-        Neo1 --> R2[Resolver: requirements<br/>for each application]
+        Neo1 --> R2[Resolver: apis & dataObjects<br/>for each application]
         R2 --> Cache2{Batch Cache Check}
         Cache2 -->|Some Hit| Neo2[Query Neo4j:<br/>MATCH remaining]
         Cache2 -->|All Miss| Neo2
@@ -328,45 +328,51 @@ graph TB
 ```mermaid
 graph TD
     subgraph "Business Layer"
-        BC[BusinessCapability<br/>---<br/>id, name, level<br/>owner, criticality<br/>maturity]
-        REQ[Requirement<br/>---<br/>id, name, type<br/>priority, status<br/>compliance[]]
+        BF[BusinessFunction<br/>---<br/>id, name, level<br/>owner, criticality<br/>maturity]
     end
 
     subgraph "Application Layer"
         APP[Application<br/>---<br/>id, name, type<br/>techStack[]<br/>costPerYear<br/>lifecycle]
-        CODE[CodeComponent<br/>---<br/>id, name, type<br/>filePath, language<br/>complexity]
+        API[API<br/>---<br/>id, name, type<br/>protocol<br/>version]
+        COMP[Component<br/>---<br/>id, name, type<br/>technology<br/>description]
     end
 
     subgraph "Data Layer"
         DATA[DataObject<br/>---<br/>id, name, type<br/>sensitivity<br/>recordCount]
+        TABLE[Table<br/>---<br/>id, name<br/>schema<br/>columns[]]
     end
 
     subgraph "Infrastructure Layer"
-        INFRA[Infrastructure<br/>---<br/>id, name, type<br/>provider, region<br/>costPerYear]
+        SERVER[Server<br/>---<br/>id, name<br/>environment<br/>provider]
     end
 
-    subgraph "Documentation Layer"
-        DIAG[Diagram<br/>---<br/>id, name, type<br/>format<br/>components[]]
+    subgraph "Change Management Layer"
+        APPCHG[AppChange<br/>---<br/>id, version<br/>date, author<br/>description]
+        INFRACHG[InfraChange<br/>---<br/>id, version<br/>date, impact<br/>status]
     end
 
-    BC -->|REQUIRES| REQ
-    REQ -->|IMPLEMENTED_BY| APP
-    APP -->|CONTAINS| CODE
-    APP -->|USES| DATA
-    CODE -->|USES| DATA
-    APP -->|DEPLOYED_ON| INFRA
-    DATA -->|STORED_ON| INFRA
-    BC -->|DOCUMENTED_BY| DIAG
-    APP -->|DEPENDS_ON| APP
-    CODE -->|CALLS| APP
+    BF -->|implemented by| APP
+    APP -->|EXPOSES| API
+    APP -->|CONTAINS| COMP
+    APP -->|WORKS_ON| DATA
+    APP -->|WORKS_ON| TABLE
+    COMP -->|WORKS_ON| DATA
+    APP -->|INSTALLED_ON| SERVER
+    DATA -->|INCLUDES| TABLE
+    APPCHG -->|CHANGES| APP
+    INFRACHG -->|CHANGES| SERVER
+    APP -->|CALLS| API
+    COMP -->|CALLS| API
 
-    style BC fill:#ff9999
-    style REQ fill:#ffcc99
+    style BF fill:#ff9999
     style APP fill:#99ccff
-    style CODE fill:#99ffcc
+    style API fill:#99ff99
+    style COMP fill:#99ffcc
     style DATA fill:#cc99ff
-    style INFRA fill:#ffff99
-    style DIAG fill:#cccccc
+    style TABLE fill:#ddaaff
+    style SERVER fill:#ffff99
+    style APPCHG fill:#ffcc99
+    style INFRACHG fill:#ffddaa
 ```
 
 ---
@@ -376,32 +382,26 @@ graph TD
 ### Index Strategy
 
 ```
-Constraints (Uniqueness) - 16 Node Types:
-├── BusinessCapability.id, Requirement.id, Application.id
-├── Component.id, Server.id
-├── AppChange.id, InfraChange.id
-├── CodeComponent.id, CodeFile.path
-├── Function.(name, filePath) - composite
-├── DataObject.id, Infrastructure.id, Diagram.id
-├── DiagramEntity.id, Module.name
-└── Repository.url
+Constraints (Uniqueness) - 9 Node Types:
+├── BusinessFunction.id, Application.id, API.id
+├── Component.id, DataObject.id, Table.id
+├── Server.id, AppChange.id, InfraChange.id
+└── (Additional: CodeComponent.id, CodeFile.path, Repository.url)
 
 Tier 1 Indexes (Critical - 40+ queries):
 ├── *.name - All node types (exact match, sorting)
 ├── DataObject.sensitivity - Compliance queries
 ├── Server.environment - Deployment filtering
-├── Infrastructure.environment/criticality - Infrastructure queries
-├── Requirement.compliance - Regulatory tracking
-└── BusinessCapability.criticality - Priority assessment
+├── Server.criticality - Infrastructure queries
+└── BusinessFunction.criticality - Priority assessment
 
 Tier 2 Indexes (Important - 10+ queries):
 ├── Component.technology/type - Tech stack analysis
 ├── AppChange/InfraChange.status/priority - Change management
 ├── Application.type/businessValue - Portfolio management
-├── CodeFile.language - Code analysis
+├── API.protocol/version - API management
 ├── DataObject.type - Data classification
-├── Requirement.status - Requirements tracking
-└── BusinessCapability.maturity - Capability assessment
+└── BusinessFunction.maturity - Capability assessment
 
 Composite Indexes (Common Query Patterns):
 ├── Application.(lifecycle, businessValue) - Portfolio filtering

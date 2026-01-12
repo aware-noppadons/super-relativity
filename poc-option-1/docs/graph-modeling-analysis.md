@@ -659,7 +659,7 @@ ORDER BY diversityScore DESC
 **Keep Current**:
 ```cypher
 (AppChange)-[:ADDS]->(Component)
-(AppChange)-[:MODIFIES]->(BusinessCapability)
+(AppChange)-[:MODIFIES]->(BusinessFunction)
 (AppChange)-[:ENABLES]->(DataObject)
 ```
 

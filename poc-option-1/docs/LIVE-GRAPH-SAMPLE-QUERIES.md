@@ -2,7 +2,8 @@
 
 **For:** Neo4j Browser exploration of Super Relativity graph with MASTER-PATTERNS v2.0
 
-**Updated:** 2026-01-09 (after data source separation)
+**Updated:** 2026-01-09 (complete schema coverage)
+**Total Queries:** 63 (covering all 10 node types and 13 relationship patterns)
 
 ---
 
@@ -86,7 +87,7 @@ LIMIT 20;
 ### 8. All Business Capabilities
 
 ```cypher
-MATCH (bc:BusinessCapability)
+MATCH (bc:BusinessFunction)
 RETURN bc.id, bc.name, bc.description
 ORDER BY bc.name;
 ```
@@ -99,11 +100,27 @@ RETURN s.id, s.name, s.environment, s.status
 ORDER BY s.environment, s.name;
 ```
 
+### 10. All Application Changes
+
+```cypher
+MATCH (ac:AppChange)
+RETURN ac.id, ac.name, ac.changeType, ac.status, ac.priority, ac.plannedDate
+ORDER BY ac.priority DESC, ac.plannedDate;
+```
+
+### 11. All Infrastructure Changes
+
+```cypher
+MATCH (ic:InfraChange)
+RETURN ic.id, ic.name, ic.changeType, ic.status, ic.priority, ic.plannedDate
+ORDER BY ic.priority DESC, ic.plannedDate;
+```
+
 ---
 
 ## Relationship Pattern Queries (MASTER-PATTERNS v2.0)
 
-### 10. Pattern 1: Application CALLS Application
+### 12. Pattern 1: Application CALLS Application
 
 ```cypher
 // Business-level application integration
@@ -113,7 +130,7 @@ ORDER BY a1.name
 LIMIT 10;
 ```
 
-### 11. Pattern 2: Component WORKS_ON DataObject
+### 13. Pattern 2: Component WORKS_ON DataObject
 
 ```cypher
 // Technical data access patterns
@@ -128,11 +145,11 @@ RETURN
 ORDER BY c.name, r.rw;
 ```
 
-### 12. Pattern 3: Application IMPLEMENTS BusinessCapability
+### 14. Pattern 3: Application IMPLEMENTS BusinessFunction
 
 ```cypher
 // Applications realizing business capabilities
-MATCH (a:Application)-[r:IMPLEMENTS]->(bc:BusinessCapability)
+MATCH (a:Application)-[r:IMPLEMENTS]->(bc:BusinessFunction)
 RETURN
   a.name AS application,
   bc.name AS capability,
@@ -141,7 +158,7 @@ RETURN
 ORDER BY bc.name;
 ```
 
-### 13. Pattern 4: API EXPOSES Component
+### 15. Pattern 4: API EXPOSES Component
 
 ```cypher
 // APIs exposing internal components
@@ -154,7 +171,7 @@ RETURN
 ORDER BY api.name;
 ```
 
-### 14. Pattern 5: Application OWNS Component
+### 16. Pattern 5a: Application OWNS Component
 
 ```cypher
 // Ownership relationships
@@ -167,7 +184,20 @@ RETURN
 ORDER BY a.name;
 ```
 
-### 15. Pattern 6: Component CALLS API
+### 17. Pattern 5b: Application OWNS BusinessFunction
+
+```cypher
+// Application ownership of business capabilities
+MATCH (a:Application)-[r:OWNS]->(bc:BusinessFunction)
+RETURN
+  a.name AS application,
+  bc.name AS capability,
+  r.description,
+  r.syncedAt
+ORDER BY a.name;
+```
+
+### 18. Pattern 6: Component CALLS API
 
 ```cypher
 // Component-to-API communication
@@ -182,7 +212,7 @@ RETURN
 ORDER BY c.name;
 ```
 
-### 16. Pattern 7: InfraChange CHANGES Server
+### 19. Pattern 7a: InfraChange CHANGES Server
 
 ```cypher
 // Infrastructure change tracking
@@ -197,21 +227,64 @@ RETURN
 ORDER BY ic.changeType, s.environment;
 ```
 
-### 17. Pattern 8: Server INSTALLED_ON Application
+### 20. Pattern 7b: AppChange CHANGES Component
 
 ```cypher
-// Server deployment relationships
-MATCH (s:Server)-[r:INSTALLED_ON]->(a:Application)
+// Application changes affecting components
+MATCH (ac:AppChange)-[r:CHANGES]->(c:Component)
 RETURN
-  s.name AS server,
-  s.environment AS env,
-  a.name AS application,
+  ac.name AS change,
+  ac.changeType AS type,
+  ac.status AS status,
+  c.name AS component,
   r.description,
   r.syncedAt
-ORDER BY s.environment, a.name;
+ORDER BY ac.priority DESC, ac.status;
 ```
 
-### 18. Pattern 9: Container CONTAINS Component
+### 21. Pattern 7c: AppChange CHANGES BusinessFunction
+
+```cypher
+// Application changes affecting business capabilities
+MATCH (ac:AppChange)-[r:CHANGES]->(bc:BusinessFunction)
+RETURN
+  ac.name AS change,
+  ac.changeType AS type,
+  bc.name AS capability,
+  r.description,
+  r.syncedAt
+ORDER BY ac.priority DESC;
+```
+
+### 22. Pattern 7d: AppChange CHANGES DataObject
+
+```cypher
+// Application changes affecting data objects
+MATCH (ac:AppChange)-[r:CHANGES]->(d:DataObject)
+RETURN
+  ac.name AS change,
+  ac.changeType AS type,
+  d.name AS dataObject,
+  d.type AS dataType,
+  r.description,
+  r.syncedAt
+ORDER BY ac.priority DESC;
+```
+
+### 23. Pattern 8: Component INSTALLED_ON Server
+
+```cypher
+// Component deployment on infrastructure (CORRECTED DIRECTION)
+MATCH (c:Component)-[r:INSTALLED_ON]->(s:Server)
+RETURN
+  c.name AS component,
+  s.name AS server,
+  s.environment AS env,
+  r.syncedAt
+ORDER BY s.environment, s.name;
+```
+
+### 24. Pattern 9: Container CONTAINS Component
 
 ```cypher
 // Containment hierarchy (from diagrams)
@@ -225,7 +298,7 @@ RETURN
 ORDER BY container.name;
 ```
 
-### 19. Pattern 10: API WORKS_ON DataObject
+### 25. Pattern 10a: API WORKS_ON DataObject
 
 ```cypher
 // API data access patterns
@@ -240,11 +313,25 @@ RETURN
 ORDER BY api.name, r.rw;
 ```
 
-### 20. Pattern 11: BusinessCapability RELATES BusinessCapability
+### 26. Pattern 10b: BusinessFunction WORKS_ON DataObject
+
+```cypher
+// Business capability data access patterns
+MATCH (bc:BusinessFunction)-[r:WORKS_ON]->(d:DataObject)
+RETURN
+  bc.name AS capability,
+  d.name AS dataObject,
+  d.type AS dataType,
+  r.rw AS accessType,
+  r.description
+ORDER BY bc.name, r.rw;
+```
+
+### 27. Pattern 11a: BusinessFunction RELATES BusinessFunction
 
 ```cypher
 // Business capability interactions
-MATCH (bc1:BusinessCapability)-[r:RELATES]->(bc2:BusinessCapability)
+MATCH (bc1:BusinessFunction)-[r:RELATES]->(bc2:BusinessFunction)
 RETURN
   bc1.name AS from,
   bc2.name AS to,
@@ -254,11 +341,64 @@ RETURN
 ORDER BY bc1.name;
 ```
 
+### 28. Pattern 11b: Application RELATES Application
+
+```cypher
+// Application-to-application relationships
+MATCH (a1:Application)-[r:RELATES]->(a2:Application)
+RETURN
+  a1.name AS from,
+  a2.name AS to,
+  r.mode AS interactionMode,
+  r.description,
+  r.syncedAt
+ORDER BY a1.name;
+```
+
+### 29. Pattern 11c: Component RELATES Component
+
+```cypher
+// Component dependencies and relationships
+MATCH (c1:Component)-[r:RELATES]->(c2:Component)
+RETURN
+  c1.name AS from,
+  c2.name AS to,
+  r.description,
+  r.diagramFile
+ORDER BY c1.name;
+```
+
+### 30. Pattern 12: Component IMPLEMENTS BusinessFunction
+
+```cypher
+// Components implementing business capabilities
+MATCH (c:Component)-[r:IMPLEMENTS]->(bc:BusinessFunction)
+RETURN
+  c.name AS component,
+  c.technology AS technology,
+  bc.name AS capability,
+  r.description
+ORDER BY bc.name, c.name;
+```
+
+### 31. Pattern 13: BusinessFunction INCLUDES API
+
+```cypher
+// Business capabilities including APIs
+MATCH (bc:BusinessFunction)-[r:INCLUDES]->(api:API)
+RETURN
+  bc.name AS capability,
+  api.name AS api,
+  r.description,
+  r.diagramFile
+ORDER BY bc.name;
+```
+
 ---
 
 ## Data Quality Verification Queries
 
-### 21. Check for Missing RW on WORKS_ON
+### 32. Check for Missing RW on WORKS_ON
 
 ```cypher
 // All WORKS_ON relationships MUST have rw property
@@ -273,7 +413,7 @@ RETURN
 
 **Expected**: 0 results (no missing rw properties)
 
-### 22. Check for Invalid Mode Values
+### 33. Check for Invalid Mode Values
 
 ```cypher
 // Mode must be pushes, pulls, or bidirectional
@@ -289,7 +429,7 @@ ORDER BY violations DESC;
 
 **Expected**: 0 results (no invalid modes)
 
-### 23. Check for Missing Source Attribution
+### 34. Check for Missing Source Attribution
 
 ```cypher
 // Every relationship should have either syncedAt or diagramFile
@@ -305,7 +445,7 @@ LIMIT 20;
 
 **Expected**: Should only show base schema relationships (if any)
 
-### 24. Orphaned Nodes (No Relationships)
+### 35. Orphaned Nodes (No Relationships)
 
 ```cypher
 // Find nodes with no incoming or outgoing relationships
@@ -320,7 +460,7 @@ LIMIT 20;
 
 ## Business Analysis Queries
 
-### 25. Application Dependency Map
+### 36. Application Dependency Map
 
 ```cypher
 // What does a specific application depend on?
@@ -334,7 +474,7 @@ RETURN
 ORDER BY type(r), targetName;
 ```
 
-### 26. Impact Analysis - What Uses This DataObject?
+### 37. Impact Analysis - What Uses This DataObject?
 
 ```cypher
 // Find all components/APIs that access a specific data object
@@ -348,7 +488,7 @@ RETURN
 ORDER BY sourceType, r.rw;
 ```
 
-### 27. Application Technology Stack
+### 38. Application Technology Stack
 
 ```cypher
 // What components and their technologies make up an application?
@@ -361,7 +501,7 @@ RETURN
 ORDER BY c.name;
 ```
 
-### 28. Cross-Application API Calls
+### 39. Cross-Application API Calls
 
 ```cypher
 // Find all cross-application API communications
@@ -377,11 +517,11 @@ RETURN
 ORDER BY app1.name, app2.name;
 ```
 
-### 29. Business Capability Fulfillment
+### 40. Business Capability Fulfillment
 
 ```cypher
 // Which applications implement each business capability?
-MATCH (bc:BusinessCapability)<-[:IMPLEMENTS]-(a:Application)
+MATCH (bc:BusinessFunction)<-[:IMPLEMENTS]-(a:Application)
 RETURN
   bc.name AS capability,
   collect(a.name) AS implementingApplications,
@@ -389,7 +529,7 @@ RETURN
 ORDER BY appCount DESC, bc.name;
 ```
 
-### 30. Environment-based Server Distribution
+### 41. Environment-based Server Distribution
 
 ```cypher
 // How are applications distributed across environments?
@@ -405,7 +545,7 @@ ORDER BY environment, application;
 
 ## Technical Architecture Queries
 
-### 31. Data Access Patterns by Type
+### 42. Data Access Patterns by Type
 
 ```cypher
 // Breakdown of read vs write vs read-write access
@@ -416,7 +556,7 @@ RETURN
 ORDER BY count DESC;
 ```
 
-### 32. API Integration Modes
+### 43. API Integration Modes
 
 ```cypher
 // How are APIs being called? (push vs pull vs bidirectional)
@@ -427,7 +567,7 @@ RETURN
 ORDER BY count DESC;
 ```
 
-### 33. Component Complexity (Relationship Count)
+### 44. Component Complexity (Relationship Count)
 
 ```cypher
 // Which components have the most connections?
@@ -441,7 +581,7 @@ ORDER BY relationshipCount DESC
 LIMIT 10;
 ```
 
-### 34. Find All Paths Between Two Applications
+### 45. Find All Paths Between Two Applications
 
 ```cypher
 // How are two applications connected?
@@ -453,7 +593,7 @@ RETURN
   length(path) AS hops;
 ```
 
-### 35. Diagram Coverage Analysis
+### 46. Diagram Coverage Analysis
 
 ```cypher
 // Which components are documented in diagrams?
@@ -475,7 +615,7 @@ ORDER BY diagramCount DESC, c.name;
 
 ## Debugging Queries
 
-### 36. Relationship Properties Inspection
+### 47. Relationship Properties Inspection
 
 ```cypher
 // See all properties on relationships of a specific type
@@ -492,7 +632,7 @@ ORDER BY count DESC
 LIMIT 10;
 ```
 
-### 37. Node Properties Inspection
+### 48. Node Properties Inspection
 
 ```cypher
 // See what properties exist on Application nodes
@@ -507,7 +647,7 @@ RETURN
 LIMIT 10;
 ```
 
-### 38. Find Diagram-Sourced Entities
+### 49. Find Diagram-Sourced Entities
 
 ```cypher
 // What entities were created from diagram parsing?
@@ -521,7 +661,7 @@ RETURN
 ORDER BY n.diagramFile, nodeType;
 ```
 
-### 39. Find LeanIX-Sourced Entities
+### 50. Find LeanIX-Sourced Entities
 
 ```cypher
 // What entities were synced from LeanIX?
@@ -536,7 +676,7 @@ ORDER BY n.syncedAt DESC
 LIMIT 20;
 ```
 
-### 40. Relationship Type Distribution by Source
+### 51. Relationship Type Distribution by Source
 
 ```cypher
 // Which relationship types come from which sources?
@@ -556,7 +696,7 @@ ORDER BY relType, source;
 
 ## Visualization Queries (for Neo4j Browser)
 
-### 41. Visualize Application and Its Components
+### 52. Visualize Application and Its Components
 
 ```cypher
 // Show an application with all its components and data objects
@@ -565,7 +705,7 @@ RETURN path
 LIMIT 50;
 ```
 
-### 42. Visualize API Communication Layer
+### 53. Visualize API Communication Layer
 
 ```cypher
 // Show all APIs and what calls them
@@ -574,24 +714,25 @@ RETURN path
 LIMIT 30;
 ```
 
-### 43. Visualize Business Capability Implementation
+### 54. Visualize Business Capability Implementation
 
 ```cypher
 // Show business capabilities and implementing applications
-MATCH path = (a:Application)-[:IMPLEMENTS]->(bc:BusinessCapability)
+MATCH path = (a:Application)-[:IMPLEMENTS]->(bc:BusinessFunction)
 RETURN path;
 ```
 
-### 44. Visualize Infrastructure Changes
+### 55. Visualize Infrastructure Changes
 
 ```cypher
-// Show infrastructure changes and affected servers
-MATCH path = (ic:InfraChange)-[:CHANGES]->(s:Server)-[:INSTALLED_ON]->(a:Application)
-RETURN path
+// Show infrastructure changes and affected servers with deployed components
+MATCH (ic:InfraChange)-[:CHANGES]->(s:Server)
+OPTIONAL MATCH path = (c:Component)-[:INSTALLED_ON]->(s)
+RETURN ic, s, path
 LIMIT 20;
 ```
 
-### 45. Visualize Complete Application Context (C4 Context Level)
+### 56. Visualize Complete Application Context (C4 Context Level)
 
 ```cypher
 // Show an application with all its direct relationships
@@ -606,7 +747,7 @@ LIMIT 100;
 
 ## Performance Queries
 
-### 46. Index Verification
+### 57. Index Verification
 
 ```cypher
 // Check what indexes exist
@@ -614,7 +755,7 @@ CALL db.indexes() YIELD name, type, labelsOrTypes, properties, state
 RETURN name, type, labelsOrTypes, properties, state;
 ```
 
-### 47. Constraint Verification
+### 58. Constraint Verification
 
 ```cypher
 // Check what constraints exist
@@ -622,7 +763,7 @@ CALL db.constraints() YIELD name, type, labelsOrTypes, properties
 RETURN name, type, labelsOrTypes, properties;
 ```
 
-### 48. Database Statistics
+### 59. Database Statistics
 
 ```cypher
 // Overall graph statistics
@@ -634,7 +775,7 @@ RETURN nodeCount, relCount, labelCount, relTypeCount;
 
 ## Custom Analysis Templates
 
-### 49. Template: Find Entity by Name (Fuzzy Search)
+### 60. Template: Find Entity by Name (Fuzzy Search)
 
 ```cypher
 // Search for entities with name containing keyword
@@ -649,7 +790,7 @@ ORDER BY type, name
 LIMIT 20;
 ```
 
-### 50. Template: Trace Data Lineage
+### 61. Template: Trace Data Lineage
 
 ```cypher
 // Follow data from source to consumers
@@ -681,8 +822,14 @@ ORDER BY steps;
 
 7. **Chaining Queries**: Combine patterns from different queries to answer complex questions
 
+8. **Schema Reference**: See `GRAPH-SCHEMA-REFERENCE.md` for complete node types and relationship patterns
+
 ---
+
+**Query Count**: 63 queries (updated with all node types and relationship patterns)
 
 **Last Updated**: 2026-01-09
 **Graph Schema**: MASTER-PATTERNS v2.0
 **Data Sources**: LeanIX (business) + Diagrams (technical)
+**Node Types Covered**: 8 types (Application, Component, API, DataObject, BusinessFunction, Server, AppChange, InfraChange)
+**Relationship Patterns Covered**: 13 patterns (OWNS, CALLS, IMPLEMENTS, EXPOSES, INCLUDES, WORKS_ON, CHANGES, INSTALLED_ON, CONTAINS, RELATES)

@@ -30,7 +30,7 @@ START: You have a relationship between Source → Target
         YES ────────┼────────→ Use: OWNS
                     │          Examples:
                     │          - Application→Component
-                    │          - Application→BusinessCapability
+                    │          - Application→BusinessFunction
                     NO
                     │
 ┌───────────────────┴─────────────────────────────────────────┐
@@ -74,17 +74,17 @@ START: You have a relationship between Source → Target
                     │          Examples:
                     │          - API→DataObject
                     │          - Component→DataObject
-                    │          - BusinessCapability→DataObject
+                    │          - BusinessFunction→DataObject
                     NO
                     │
 ┌───────────────────┴─────────────────────────────────────────┐
 │ Q7: Does Source IMPLEMENT a business capability?            │
-│ (Component implements BusinessCapability)                   │
+│ (Component implements BusinessFunction)                   │
 └───────────────────┬─────────────────────────────────────────┘
                     │
         YES ────────┼────────→ Use: IMPLEMENTS
                     │          Examples:
-                    │          - Component→BusinessCapability
+                    │          - Component→BusinessFunction
                     NO
                     │
 ┌───────────────────┴─────────────────────────────────────────┐
@@ -132,19 +132,19 @@ START: You have a relationship between Source → Target
 | **AppChange** | Component, Capability, DataObject | **CHANGES** | `description` |
 | **InfraChange** | Server | **CHANGES** | `description` |
 | **Application** | Component | **OWNS** | - |
-| **Application** | BusinessCapability | **OWNS** | - |
+| **Application** | BusinessFunction | **OWNS** | - |
 | **Application** | API | **CALLS** | `mode: "pushes"` usually |
 | **Component** | Server | **INSTALLED_ON** | - |
 | **Component** | API | **CALLS** | `mode: "pushes"` usually |
 | **Component** | DataObject | **WORKS_ON** | `rw: reads/writes/read-n-writes` |
-| **Component** | BusinessCapability | **IMPLEMENTS** | - |
+| **Component** | BusinessFunction | **IMPLEMENTS** | - |
 | **Component** | Component | **CONTAINS** | (parent→child) |
 | **Component** | Component | **RELATES** | (peer→peer), set `mode` |
 | **API** | Component | **EXPOSES** | - |
 | **API** | DataObject | **WORKS_ON** | `rw: reads/writes/read-n-writes` |
 | **BusinessFunction** | API | **INCLUDES** | - |
 | **BusinessFunction** | BusinessFunction | **RELATES** | set `mode` |
-| **BusinessCapability** | DataObject | **WORKS_ON** | `rw: reads/writes/read-n-writes` |
+| **BusinessFunction** | DataObject | **WORKS_ON** | `rw: reads/writes/read-n-writes` |
 | **Any** | **Any** | **RELATES** | fallback, set `mode` |
 
 ---
@@ -398,9 +398,9 @@ if (sourceType === 'Application' && targetType === 'Component') {
 }
 ```
 
-### Rule 4: Component → BusinessCapability
+### Rule 4: Component → BusinessFunction
 ```javascript
-if (sourceType === 'Component' && targetType === 'BusinessCapability') {
+if (sourceType === 'Component' && targetType === 'BusinessFunction') {
   return {
     type: 'IMPLEMENTS',
     mode: null,

@@ -81,7 +81,7 @@ docker exec super-relativity-neo4j cypher-shell \
   "MATCH (n) RETURN labels(n)[0], count(*)"
 ```
 
-**Expected output**: Should show Applications, Components, DataObjects, BusinessCapabilities
+**Expected output**: Should show Applications, Components, DataObjects, BusinessFunctions
 
 **If this fails**: Environment is broken. Fix before proceeding.
 
@@ -117,9 +117,10 @@ Real LeanIX uses nested format:
 
 ### 2. Relationship Types Must Follow MASTER-PATTERNS v2.0
 Not all relationships are equal. Use the decision guide:
-- Application → BusinessCapability = `IMPLEMENTS`
+- Application → BusinessFunction = `OWNS`
+- Component → BusinessFunction = `IMPLEMENTS`
 - Component → DataObject = `WORKS_ON` (with `rw` property!)
-- Application → Application = `CALLS` (with `mode` property)
+- Application → Application = `RELATES` (with `mode` property)
 
 **Wrong types will break queries!**
 

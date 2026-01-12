@@ -79,11 +79,12 @@ Show a slide or whiteboard with manual process arrows between disconnected tools
 **Talking Points:**
 
 > "Super Relativity creates a **unified knowledge graph** that connects:
-> - Business Capabilities from LeanIX
-> - Requirements and Applications from LeanIX
-> - Code components from Git repositories
+> - Business Functions from LeanIX
+> - Applications and APIs from LeanIX
+> - Components following C4 Model patterns
 > - Data objects and their usage
-> - Infrastructure from cloud providers
+> - Servers and infrastructure
+> - Change tracking (AppChange, InfraChange)
 >
 > This gives us **instant, accurate impact analysis** at any level."
 
@@ -92,9 +93,11 @@ Show the Neo4j Browser with the graph visualization:
 
 ```cypher
 // Show the complete ecosystem
-MATCH (cap:BusinessCapability)-[:REQUIRES]->(r:Requirement)
-      -[:IMPLEMENTED_BY]->(a:Application)-[:USES]->(d:DataObject)
-RETURN cap, r, a, d
+MATCH (bf:BusinessFunction)<-[:IMPLEMENTS]-(a:Application)
+OPTIONAL MATCH (a)-[:EXPOSES]->(api:API)
+OPTIONAL MATCH (a)-[:WORKS_ON]->(d:DataObject)
+OPTIONAL MATCH (a)-[:INSTALLED_ON]->(s:Server)
+RETURN bf, a, api, d, s
 LIMIT 50;
 ```
 
@@ -111,23 +114,26 @@ LIMIT 50;
 
 ```cypher
 MATCH (a:Application {id: 'APP-123'})
-OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
-OPTIONAL MATCH (a)-[:DEPLOYED_ON]->(i:Infrastructure)
-OPTIONAL MATCH (r:Requirement)-[:IMPLEMENTED_BY]->(a)
-OPTIONAL MATCH (a)<-[:DEPENDS_ON]-(dependent:Application)
+OPTIONAL MATCH (a)-[:EXPOSES]->(api:API)
+OPTIONAL MATCH (a)-[:WORKS_ON]->(d:DataObject)
+OPTIONAL MATCH (a)-[:INSTALLED_ON]->(s:Server)
+OPTIONAL MATCH (a)<-[:CHANGES]-(change:AppChange)
+OPTIONAL MATCH (a)<-[:CALLS]-(dependent:Application)
 RETURN
   a.name as Application,
-  collect(DISTINCT r.name) as RequirementsImplemented,
+  collect(DISTINCT api.name) as APIsExposed,
   collect(DISTINCT d.name) as DataObjectsUsed,
-  collect(DISTINCT i.name) as Infrastructure,
+  collect(DISTINCT s.name) as ServersUsed,
+  collect(DISTINCT change.version) as RecentChanges,
   collect(DISTINCT dependent.name) as DependentApplications;
 ```
 
 **Results Interpretation:**
 Point out:
-- ✅ **Requirements** being implemented
+- ✅ **APIs** being exposed
 - ✅ **Data objects** being accessed
-- ✅ **Infrastructure** it runs on
+- ✅ **Servers** it runs on
+- ✅ **Recent changes** tracked
 - ✅ **Dependent applications** that would be affected
 
 **Talking Points:**
@@ -167,13 +173,13 @@ ORDER BY a.costPerYear DESC;
 **Follow-up Query - Full Trace:**
 
 ```cypher
-MATCH path = (r:Requirement {id: 'REQ-003'})-[:IMPLEMENTED_BY]->(a:Application)
-       -[:USES]->(d:DataObject)-[:STORED_ON]->(i:Infrastructure)
-WHERE 'GDPR' IN r.compliance
+MATCH path = (a:Application)-[:WORKS_ON]->(d:DataObject {sensitivity: 'PII'})
+             -[:INCLUDES]->(t:Table)
+OPTIONAL MATCH (d)<-[:INSTALLED_ON]-(s:Server)
 RETURN path;
 ```
 
-> "And we can trace from the compliance requirement, through the applications, to the exact infrastructure where PII is stored."
+> "And we can trace from applications handling PII data, through the data objects, to the tables and servers where data is stored."
 
 ---
 
@@ -185,43 +191,43 @@ RETURN path;
 **Execute Query:**
 
 ```cypher
-MATCH (cap:BusinessCapability {id: 'CAP-002'})
-OPTIONAL MATCH (cap)-[:REQUIRES]->(r:Requirement)
-OPTIONAL MATCH (r)-[:IMPLEMENTED_BY]->(a:Application)
-OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
-OPTIONAL MATCH (a)-[:DEPLOYED_ON]->(i:Infrastructure)
+MATCH (bf:BusinessFunction {id: 'CAP-002'})
+OPTIONAL MATCH (bf)<-[:IMPLEMENTS]-(a:Application)
+OPTIONAL MATCH (a)-[:EXPOSES]->(api:API)
+OPTIONAL MATCH (a)-[:WORKS_ON]->(d:DataObject)
+OPTIONAL MATCH (a)-[:INSTALLED_ON]->(s:Server)
 RETURN
-  cap.name as Capability,
-  cap.owner as BusinessOwner,
-  cap.criticality as BusinessCriticality,
-  collect(DISTINCT r.name) as Requirements,
+  bf.name as BusinessFunction,
+  bf.owner as BusinessOwner,
+  bf.criticality as BusinessCriticality,
   collect(DISTINCT a.name) as Applications,
+  collect(DISTINCT api.name) as APIs,
   collect(DISTINCT d.name) as DataObjects,
-  collect(DISTINCT i.name) as Infrastructure;
+  collect(DISTINCT s.name) as Servers;
 ```
 
 **Results Interpretation:**
-- Start at the business capability level
-- Show it connects to requirements
-- Drill down to applications
-- Show data and infrastructure
+- Start at the business function level
+- Show which applications implement it
+- See what APIs are exposed
+- Show data and servers used
 
 **Talking Points:**
 
-> "Business stakeholders can now see exactly which technical systems support their capabilities. IT leaders can see which business capabilities will be impacted by technical changes. Everyone speaks the same language."
+> "Business stakeholders can now see exactly which technical systems support their business functions. IT leaders can see which business functions will be impacted by technical changes. Everyone speaks the same language."
 
 **Cost Analysis Follow-up:**
 
 ```cypher
-MATCH (cap:BusinessCapability {id: 'CAP-002'})-[:REQUIRES]->(r:Requirement)
-       -[:IMPLEMENTED_BY]->(a:Application)-[:DEPLOYED_ON]->(i:Infrastructure)
+MATCH (bf:BusinessFunction {id: 'CAP-002'})<-[:IMPLEMENTS]-(a:Application)
+OPTIONAL MATCH (a)-[:INSTALLED_ON]->(s:Server)
 RETURN
-  cap.name as Capability,
+  bf.name as BusinessFunction,
   sum(a.costPerYear) as TotalApplicationCost,
-  sum(i.costPerYear) as TotalInfrastructureCost,
-  sum(a.costPerYear) + sum(i.costPerYear) as TotalCost,
+  sum(s.costPerMonth * 12) as TotalServerCost,
+  sum(a.costPerYear) + sum(s.costPerMonth * 12) as TotalCost,
   count(DISTINCT a) as ApplicationCount,
-  count(DISTINCT i) as InfrastructureCount;
+  count(DISTINCT s) as ServerCount;
 ```
 
 > "We can also see the total cost of ownership for each business capability. This helps prioritize investments and identify optimization opportunities."
@@ -245,27 +251,27 @@ RETURN
 
 ```cypher
 // System Overview
-MATCH (cap:BusinessCapability) WITH count(cap) as capCount
-MATCH (req:Requirement) WITH capCount, count(req) as reqCount
-MATCH (app:Application) WITH capCount, reqCount, count(app) as appCount
-MATCH (data:DataObject) WITH capCount, reqCount, appCount, count(data) as dataCount
-MATCH (infra:Infrastructure) WITH capCount, reqCount, appCount, dataCount, count(infra) as infraCount
+MATCH (bf:BusinessFunction) WITH count(bf) as bfCount
+MATCH (app:Application) WITH bfCount, count(app) as appCount
+MATCH (api:API) WITH bfCount, appCount, count(api) as apiCount
+MATCH (data:DataObject) WITH bfCount, appCount, apiCount, count(data) as dataCount
+MATCH (srv:Server) WITH bfCount, appCount, apiCount, dataCount, count(srv) as serverCount
 RETURN
-  capCount as BusinessCapabilities,
-  reqCount as Requirements,
+  bfCount as BusinessFunctions,
   appCount as Applications,
+  apiCount as APIs,
   dataCount as DataObjects,
-  infraCount as Infrastructure;
+  serverCount as Servers;
 
 // Total Costs
 MATCH (a:Application)
 WITH sum(a.costPerYear) as appCost
-MATCH (i:Infrastructure)
-WITH appCost, sum(i.costPerYear) as infraCost
+MATCH (s:Server)
+WITH appCost, sum(s.costPerMonth * 12) as serverCost
 RETURN
   appCost as TotalApplicationCost,
-  infraCost as TotalInfrastructureCost,
-  appCost + infraCost as TotalAnnualCost;
+  serverCost as TotalServerCost,
+  appCost + serverCost as TotalAnnualCost;
 ```
 
 ---
@@ -311,13 +317,13 @@ A: "Great question! Let me show you an example..."
 
 ```cypher
 // Show code-level traceability (if code components are loaded)
-MATCH path = (r:Requirement)-[:IMPLEMENTED_BY]->(a:Application)
-      -[:CONTAINS]->(c:CodeComponent)-[:USES]->(d:DataObject)
-WHERE r.id = 'REQ-001'
+MATCH path = (a:Application)-[:CONTAINS]->(comp:Component)
+             -[:WORKS_ON]->(d:DataObject)
+WHERE a.id = 'APP-123'
 RETURN path;
 ```
 
-"We can drill down to the exact classes and methods implementing each requirement. That's the full traceability we're building toward."
+"We can drill down to the exact components and their data interactions within each application. That's the full traceability we're building toward."
 
 **Q: "How does this compare to just using LeanIX?"**
 
@@ -472,7 +478,7 @@ ORDER BY a.costPerYear DESC;
 
 ```cypher
 MATCH (a:Application)
-WHERE NOT (a)<-[:IMPLEMENTED_BY]-(:Requirement)
+WHERE NOT (a)-[:IMPLEMENTS]->(:BusinessFunction)
 RETURN
   a.name as OrphanedApplication,
   a.owner as Owner,
@@ -481,7 +487,7 @@ RETURN
 ORDER BY a.costPerYear DESC;
 ```
 
-**Use Case:** "These applications aren't tied to any business requirements. Are they still needed? Can we decommission them?"
+**Use Case:** "These applications aren't tied to any business function. Are they still needed? Can we decommission them?"
 
 ---
 

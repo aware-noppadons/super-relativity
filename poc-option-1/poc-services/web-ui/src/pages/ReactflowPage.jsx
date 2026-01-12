@@ -75,7 +75,7 @@ function ReactflowPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <div>
             <strong>Legend:</strong>
-            <span style={{ marginLeft: '15px', color: '#4CAF50' }}>● BusinessCapability</span>
+            <span style={{ marginLeft: '15px', color: '#4CAF50' }}>● BusinessFunction</span>
             <span style={{ marginLeft: '15px', color: '#2196F3' }}>● DataObject</span>
             <span style={{ marginLeft: '15px', color: '#FF9800' }}>● Component</span>
             <span style={{ marginLeft: '15px', color: '#9C27B0' }}>● Server</span>

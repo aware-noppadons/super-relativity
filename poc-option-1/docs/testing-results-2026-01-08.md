@@ -1,5 +1,7 @@
 # Testing Results - System Verification
 
+> **📋 Historical Document**: This document reflects testing completed on 2026-01-08, before schema simplification (2026-01-12). References to `Requirement` and `ContextDiagram` node types were subsequently removed from the schema. See `SCHEMA-DISCREPANCY-REPORT.md` for details.
+
 **Date**: 2026-01-08
 **Scope**: GraphQL API, Web UI, and Mock LeanIX testing
 

@@ -4,11 +4,14 @@
 // This file creates ONLY the schema structure (constraints and indexes).
 // NO sample data is included here.
 //
-// Allowed Node Types:
+// Allowed Node Types (9 types):
 // - Application, API, BusinessFunction, Component, DataObject, Table,
 //   Server, AppChange, InfraChange
 //
-// Relationship Type: RELATED_TO (with mode and tags properties)
+// Relationship Types (11 specific types per MASTER-PATTERNS v2.0):
+// - CALLS, OWNS, EXPOSES, WORKS_ON, IMPLEMENTS, INCLUDES, CHANGES,
+//   MATERIALIZES, INSTALLED_ON, RELATES, CONTAINS
+// - Properties: mode (pushes/pulls/bidirectional), rw (reads/writes/read-n-writes)
 // ============================================================================
 
 // ============================================================================

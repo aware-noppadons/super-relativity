@@ -44,7 +44,7 @@ This means:
 3. **BusinessFunction** - Business capabilities/functions
 4. **Component** - Software components (services, modules, libraries)
 5. **DataObject** - Logical data entities
-6. **Table** - Physical database tables
+6. **Table** - Physical database tables (Note: Currently unused in mock data)
 7. **Server** - Physical/virtual servers
 8. **AppChange** - Application change requests/tickets
 9. **InfraChange** - Infrastructure change requests/tickets
@@ -56,10 +56,10 @@ This means:
 ### Pattern 1: Application Relationships
 
 **Application** can connect to:
-- **Application** (mode: `relates`) - Application integrates with another application
-- **API** (mode: `calls`) - Application calls an API (may not need if we can identify which component in App A call API of App B)
-- **BusinessFunction** (mode: `owns`) - Application owns/provides a business function
-- **Component** (mode: `owns`) - Application owns/contains a component
+- **Application** via `RELATES` - Application integrates with another application
+- **API** via `CALLS` - Application calls an API (may not need if we can identify which component in App A call API of App B)
+- **BusinessFunction** via `OWNS` - Application owns/provides a business function
+- **Component** via `OWNS` - Application owns/contains a component
 
 **Direction**: Application → [Application | API | BusinessFunction | Component]
 
@@ -76,11 +76,11 @@ This means:
 ### Pattern 2: API Relationships (Bidirectional with Component)
 
 **API** can connect to:
-- **Component** (mode: `exposes`) - API exposes a component
-- **DataObject** (mode: `works_on`) - API works on/manipulates data
+- **Component** via `EXPOSES` - API exposes a component
+- **DataObject** via `WORKS_ON` - API works on/manipulates data
 
 **Component** can connect to:
-- **API** (mode: `calls`) - Component calls an API
+- **API** via `CALLS` - Component calls an API
 
 **Direction**:
 - API → Component (exposes)
@@ -103,7 +103,7 @@ This means:
 ### Pattern 3: Component implements BusinessFunction
 
 **Component** can connect to:
-- **BusinessFunction** (mode: `implements`) - Component implements a business function
+- **BusinessFunction** via `IMPLEMENTS` - Component implements a business function
 
 **Direction**: Component → BusinessFunction
 **Direction**: Component → DataObject
@@ -118,7 +118,7 @@ This means:
 ### Pattern 4: BusinessFunction includes API
 
 **BusinessFunction** can connect to:
-- **API** (mode: `includes`) - Business function includes/uses an API (via Component implementing it)
+- **API** via `INCLUDES` - Business function includes/uses an API (via Component implementing it)
 
 **Direction**: BusinessFunction → API
 
@@ -131,9 +131,9 @@ This means:
 ### Pattern 5: AppChange relates to App-level entities
 
 **AppChange** can connect to:
-- **Component** (mode: `relates`) - Change impacts a component
-- **BusinessFunction** (mode: `relates`) - Change impacts a business function
-- **DataObject** (mode: `relates`) - Change impacts data
+- **Component** via `CHANGES` - Change impacts a component
+- **BusinessFunction** via `CHANGES` - Change impacts a business function
+- **DataObject** via `CHANGES` - Change impacts data
 
 **Direction**: AppChange → [Component | BusinessFunction | DataObject]
 
@@ -150,7 +150,7 @@ This means:
 ### Pattern 6: Table materializes DataObject
 
 **Table** can connect to:
-- **DataObject** (mode: `materializes`) - Physical table materializes logical data
+- **DataObject** via `MATERIALIZES` - Physical table materializes logical data
 
 **Direction**: Table → DataObject
 
@@ -165,7 +165,7 @@ This means:
 ### Pattern 7: Component installs on Server
 
 **Component** can connect to:
-- **Server** (mode: `installs_on`) - Component is deployed/installed on server
+- **Server** via `INSTALLED_ON` - Component is deployed/installed on server
 
 **Direction**: Component → Server
 
@@ -178,7 +178,7 @@ This means:
 ### Pattern 8: InfraChange relates to Server
 
 **InfraChange** can connect to:
-- **Server** (mode: `relates`) - Infrastructure change impacts a server
+- **Server** via `CHANGES` - Infrastructure change impacts a server
 
 **Direction**: InfraChange → Server
 
@@ -193,12 +193,10 @@ This means:
 ### Pattern 9: Component relates to Component
 
 **Component** can connect to:
-- **Component** (mode: `uses`) - Component uses/depends on another component
-- **Component** (mode: `contains`) - Component contains another component
+- **Component** via `RELATES` - Component uses/depends on another component
+- **Component** via `CONTAINS` - Component contains another component
 
 **Direction**: Component → Component
-
-**Allowed Modes**: `uses`, `contains`
 
 ```cypher
 (c1:Component)-[:RELATES]->(c2:Component)
@@ -210,10 +208,10 @@ This means:
 ### Pattern 10: Component/BusinessFunction use DataObject
 
 **Component** can connect to:
-- **DataObject** (mode: `use`) - Component reads/writes data
+- **DataObject** via `WORKS_ON` - Component reads/writes data
 
 **BusinessFunction** can connect to:
-- **DataObject** (mode: `use`) - Business function uses data
+- **DataObject** via `WORKS_ON` - Business function uses data
 
 **Direction**:
 - Component → DataObject
@@ -229,11 +227,11 @@ This means:
 ### Pattern 11: BusinessFunction relates to BusinessFunction
 
 **BusinessFunction** can connect to:
-- **BusinessFunction** (mode: `relates`) - Function relates to another function (hierarchy, dependency, etc.)
+- **BusinessFunction** via `RELATES` - Function relates to another function (hierarchy, dependency, etc.)
 
 **Direction**: BusinessFunction → BusinessFunction
 
-**Allowed Modes**: `relates` ONLY (NOT `contains`)
+**Note**: Uses `RELATES` relationship type (NOT `CONTAINS`)
 
 ```cypher
 (bf1:BusinessFunction)-[:RELATES {mode: 'pushes'|'pulls'}]->(bf2:BusinessFunction)

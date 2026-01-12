@@ -271,21 +271,8 @@ async function storeContextDiagram(session, parsed) {
     );
   }
 
-  // Create diagram metadata node for traceability
-  await session.run(
-    `
-    MERGE (d:ContextDiagram {fileName: $fileName})
-    SET d.parsedAt = datetime(),
-        d.applicationCount = $applicationCount,
-        d.relationshipCount = $relationshipCount,
-        d.type = 'C4-Context'
-    `,
-    {
-      fileName,
-      applicationCount: applications.length,
-      relationshipCount: relationships.length
-    }
-  );
+  // Note: ContextDiagram metadata nodes removed from simplified schema
+  // Traceability is maintained via diagramFile property on entities and relationships
 
   console.log(`Stored ${applications.length} applications and ${relationships.length} relationships from ${fileName}`);
 

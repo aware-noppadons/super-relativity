@@ -1,5 +1,7 @@
 # Visual Comparison: Relationship Modeling Approaches
 
+> **📋 Historical Document**: This document reflects analysis from before schema simplification (2026-01-12). References to `Requirement` and `ContextDiagram` node types were subsequently removed from the schema. See `SCHEMA-DISCREPANCY-REPORT.md` for details.
+
 ## Quick Reference
 
 ### Current Approach (Recommended ✅)

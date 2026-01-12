@@ -8,7 +8,7 @@
 
 This POC shows how to extend LeanIX with a Neo4j knowledge graph to provide:
 
-✅ **Bi-directional traceability** from business capabilities → requirements → applications → code → data → infrastructure
+✅ **Bi-directional traceability** from business capabilities → applications → code → data → infrastructure
 ✅ **Instant impact analysis** - "If I change X, what breaks?"
 ✅ **Real-time compliance reporting** - "Which apps handle PII data?"
 ✅ **Cost visibility** - "What does this capability cost?"
@@ -122,14 +122,13 @@ open http://localhost:3100         # Grafana
 The POC comes preloaded with realistic data following the C4 Model architecture:
 
 - **3 Applications** - Customer Portal, Application Processing API, Document Management Service
-- **6 Containers** (C4 Model) - React Frontend, API Gateway, Application Service, Document Service, PostgreSQL Database, S3 Document Store
+- **6 APIs** - REST and GraphQL APIs with MASTER-PATTERNS v2.0 relationships
 - **20 Components** (C4 Model) - Authentication Manager, Form Validator, API Clients, Processors, Storage Managers, etc.
-- **3 Business Capabilities** - L1 and L2 capabilities with criticality and maturity levels
-- **3 Requirements** - Functional and non-functional requirements with compliance tags
+- **3 Business Functions** - L1 and L2 capabilities with criticality and maturity levels
 - **3 Data Objects** - CustomerTable, ApplicationTable, DocumentStorage with PII classifications
 - **3 Servers** - Production EKS Cluster, RDS Database, S3 Bucket with deployment details
-- **Sample Context Diagrams** - PlantUML C4 diagrams showing application dependencies
-- **100+ Relationships** - CONTAINS, USES, COMMUNICATES_WITH, DEPLOYED_ON, IMPLEMENTED_BY, etc.
+- **Change Tracking** - AppChange and InfraChange nodes for version control integration
+- **100+ Relationships** - CALLS, OWNS, EXPOSES, WORKS_ON, IMPLEMENTS, INCLUDES, CONTAINS, RELATES, etc.
 
 All data represents a realistic application processing system following C4 Model best practices.
 
@@ -144,17 +143,19 @@ All data represents a realistic application processing system following C4 Model
 ```cypher
 // Run in Neo4j Browser (http://localhost:7474)
 MATCH (a:Application {id: 'APP-123'})
-OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
-OPTIONAL MATCH (a)-[:DEPLOYED_ON]->(i:Infrastructure)
-OPTIONAL MATCH (r:Requirement)-[:IMPLEMENTED_BY]->(a)
+OPTIONAL MATCH (a)-[:WORKS_ON]->(d:DataObject)
+OPTIONAL MATCH (a)-[:INSTALLED_ON]->(s:Server)
+OPTIONAL MATCH (a)-[:EXPOSES]->(api:API)
+OPTIONAL MATCH (a)<-[:CHANGES]-(change:AppChange)
 RETURN
   a.name as Application,
-  collect(DISTINCT r.name) as Requirements,
+  collect(DISTINCT api.name) as APIs,
   collect(DISTINCT d.name) as DataObjects,
-  collect(DISTINCT i.name) as Infrastructure;
+  collect(DISTINCT s.name) as Servers,
+  collect(DISTINCT change.version) as RecentChanges;
 ```
 
-**Result:** Instant view of all requirements, data, and infrastructure affected.
+**Result:** Instant view of all APIs, data, infrastructure, and recent changes affected.
 
 ### Scenario 2: Compliance
 
@@ -177,20 +178,20 @@ ORDER BY a.name;
 **Question:** "What technical systems support Application Processing capability?"
 
 ```cypher
-MATCH (cap:BusinessCapability {id: 'CAP-002'})
-OPTIONAL MATCH (cap)-[:REQUIRES]->(r:Requirement)
-OPTIONAL MATCH (r)-[:IMPLEMENTED_BY]->(a:Application)
-OPTIONAL MATCH (a)-[:USES]->(d:DataObject)
-OPTIONAL MATCH (a)-[:DEPLOYED_ON]->(i:Infrastructure)
+MATCH (bf:BusinessFunction {id: 'CAP-002'})
+OPTIONAL MATCH (bf)<-[:IMPLEMENTS]-(a:Application)
+OPTIONAL MATCH (a)-[:WORKS_ON]->(d:DataObject)
+OPTIONAL MATCH (a)-[:INSTALLED_ON]->(s:Server)
+OPTIONAL MATCH (a)-[:EXPOSES]->(api:API)
 RETURN
-  cap.name as Capability,
-  collect(DISTINCT r.name) as Requirements,
+  bf.name as BusinessFunction,
   collect(DISTINCT a.name) as Applications,
+  collect(DISTINCT api.name) as APIs,
   collect(DISTINCT d.name) as DataObjects,
-  collect(DISTINCT i.name) as Infrastructure;
+  collect(DISTINCT s.name) as Servers;
 ```
 
-**Result:** Complete capability-to-implementation mapping.
+**Result:** Complete business function to implementation mapping.
 
 **More demos:** See `PRESENTATION-GUIDE.md` for complete stakeholder presentation.
 
@@ -255,9 +256,13 @@ query {
     id
     name
     techStack
-    requirements {
+    dataObjects {
       name
-      priority
+      sensitivity
+    }
+    servers {
+      name
+      environment
     }
   }
 }

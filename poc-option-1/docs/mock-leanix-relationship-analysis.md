@@ -1,5 +1,7 @@
 # Mock LeanIX Relationship Analysis
 
+> **📋 Historical Document**: This document reflects analysis from 2026-01-08, before schema simplification (2026-01-12). References to `Requirement` and `ContextDiagram` node types were subsequently removed from the schema. See `SCHEMA-DISCREPANCY-REPORT.md` for details.
+
 **Date**: 2026-01-08
 **Issue**: 91 out of 172 relationships being skipped by sync service
 

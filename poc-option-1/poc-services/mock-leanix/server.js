@@ -18,17 +18,16 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // In-memory data store (simulates LeanIX)
-let businessCapabilities = [];
+let businessFunctions = [];
 let applications = [];
 let components = [];
-let requirements = [];
 let dataObjects = [];
 let apis = [];
 let infrastructure = [];
-let contextDiagrams = [];
 let relationships = [];
 let appChanges = [];
 let infraChanges = [];
+// Note: requirements and contextDiagrams intentionally removed from simplified schema
 
 // Load sample data on startup
 function loadSampleData() {
@@ -36,26 +35,22 @@ function loadSampleData() {
 
   if (fs.existsSync(dataPath)) {
     const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-    businessCapabilities = data.businessCapabilities || [];
+    businessFunctions = data.businessFunctions || data.businessCapabilities || [];
     applications = data.applications || [];
     components = data.components || [];
-    requirements = data.requirements || [];
     dataObjects = data.dataObjects || [];
     apis = data.apis || [];
     infrastructure = data.infrastructure || [];
-    contextDiagrams = data.contextDiagrams || [];
     relationships = data.relationships || [];
     appChanges = data.appChanges || [];
     infraChanges = data.infraChanges || [];
     console.log(`✅ Sample data loaded successfully:`);
-    console.log(`   - ${businessCapabilities.length} business capabilities`);
+    console.log(`   - ${businessFunctions.length} business functions`);
     console.log(`   - ${applications.length} applications`);
     console.log(`   - ${components.length} components`);
-    console.log(`   - ${requirements.length} requirements`);
     console.log(`   - ${dataObjects.length} data objects`);
     console.log(`   - ${apis.length} APIs`);
     console.log(`   - ${infrastructure.length} infrastructure components`);
-    console.log(`   - ${contextDiagrams.length} context diagrams`);
     console.log(`   - ${relationships.length} relationships`);
     console.log(`   - ${appChanges.length} app changes`);
     console.log(`   - ${infraChanges.length} infra changes`);
@@ -67,42 +62,8 @@ function loadSampleData() {
 }
 
 function initializeDefaultData() {
-  // Sample Requirements
-  requirements = [
-    {
-      id: 'REQ-001',
-      name: 'Enable customer self-service application submission',
-      type: 'Functional Requirement',
-      priority: 'High',
-      status: 'Approved',
-      owner: 'Product Team',
-      description: 'Allow customers to submit applications online without agent assistance',
-      capability: 'CAP-001'  // Supports Customer Onboarding
-    },
-    {
-      id: 'REQ-002',
-      name: 'Real-time application status tracking',
-      type: 'Functional Requirement',
-      priority: 'Medium',
-      status: 'Approved',
-      owner: 'Product Team',
-      description: 'Provide customers with real-time updates on application status',
-      capability: 'CAP-004'  // Supports Customer Service & Support
-    },
-    {
-      id: 'REQ-003',
-      name: 'Secure document upload and storage',
-      type: 'Non-Functional Requirement',
-      priority: 'High',
-      status: 'Approved',
-      owner: 'Security Team',
-      description: 'Ensure PII data is encrypted in transit and at rest',
-      capability: 'CAP-003'  // Supports Document Management
-    }
-  ];
-
-  // Sample Business Capabilities
-  businessCapabilities = [
+  // Sample Business Functions
+  businessFunctions = [
     {
       id: 'CAP-001',
       name: 'Customer Onboarding',
@@ -1143,12 +1104,6 @@ app.post('/graphql', (req, res) => {
         }
       }
     });
-  } else if (query.includes('requirements')) {
-    res.json({
-      data: {
-        requirements: requirements
-      }
-    });
   } else if (query.includes('dataObjects')) {
     res.json({
       data: {
@@ -1159,7 +1114,6 @@ app.post('/graphql', (req, res) => {
     res.json({
       data: {
         applications,
-        requirements,
         dataObjects,
         relationships
       }
@@ -1258,20 +1212,6 @@ app.post('/servers', (req, res) => {
   res.status(201).json({ data: newServer });
 });
 
-// Requirements
-app.get('/requirements', (req, res) => {
-  res.json({ data: requirements, count: requirements.length });
-});
-
-app.get('/requirements/:id', (req, res) => {
-  const requirement = requirements.find(r => r.id === req.params.id);
-  if (requirement) {
-    res.json({ data: requirement });
-  } else {
-    res.status(404).json({ error: 'Requirement not found' });
-  }
-});
-
 // Data Objects
 app.get('/data-objects', (req, res) => {
   res.json({ data: dataObjects, count: dataObjects.length });
@@ -1312,17 +1252,17 @@ app.get('/relationships', (req, res) => {
   res.json({ data: filtered, count: filtered.length });
 });
 
-// Business Capabilities
+// Business Functions (exposed as /capabilities for backward compatibility)
 app.get('/capabilities', (req, res) => {
-  res.json({ data: businessCapabilities, count: businessCapabilities.length });
+  res.json({ data: businessFunctions, count: businessFunctions.length });
 });
 
 app.get('/capabilities/:id', (req, res) => {
-  const cap = businessCapabilities.find(c => c.id === req.params.id);
+  const cap = businessFunctions.find(c => c.id === req.params.id);
   if (cap) {
     res.json({ data: cap });
   } else {
-    res.status(404).json({ error: 'Capability not found' });
+    res.status(404).json({ error: 'Business function not found' });
   }
 });
 
@@ -1382,27 +1322,12 @@ app.get('/infrastructure/:id', (req, res) => {
   }
 });
 
-// Context Diagrams
-app.get('/diagrams', (req, res) => {
-  res.json({ data: contextDiagrams, count: contextDiagrams.length });
-});
-
-app.get('/diagrams/:id', (req, res) => {
-  const diagram = contextDiagrams.find(d => d.id === req.params.id);
-  if (diagram) {
-    res.json({ data: diagram });
-  } else {
-    res.status(404).json({ error: 'Diagram not found' });
-  }
-});
-
 // Impact Analysis - key feature for stakeholder demo
 app.get('/impact/:entityId', (req, res) => {
   const { entityId } = req.params;
   const impacts = {
     upstream: [],
     downstream: [],
-    relatedRequirements: [],
     relatedCapabilities: [],
     relatedInfrastructure: []
   };
@@ -1421,12 +1346,6 @@ app.get('/impact/:entityId', (req, res) => {
     return { ...target, relationshipType: r.type };
   });
 
-  // Find related requirements
-  const entity = findEntity(entityId);
-  if (entity && entity.capability) {
-    impacts.relatedRequirements = requirements.filter(r => r.capability === entity.capability);
-  }
-
   res.json({ entityId, impacts, timestamp: new Date().toISOString() });
 });
 
@@ -1435,17 +1354,14 @@ function findEntity(id) {
   let entity = applications.find(a => a.id === id);
   if (entity) return { ...entity, entityType: 'Application' };
 
-  entity = requirements.find(r => r.id === id);
-  if (entity) return { ...entity, entityType: 'Requirement' };
-
   entity = dataObjects.find(d => d.id === id);
   if (entity) return { ...entity, entityType: 'DataObject' };
 
   entity = infrastructure.find(i => i.id === id);
   if (entity) return { ...entity, entityType: 'Infrastructure' };
 
-  entity = businessCapabilities.find(c => c.id === id);
-  if (entity) return { ...entity, entityType: 'Capability' };
+  entity = businessFunctions.find(c => c.id === id);
+  if (entity) return { ...entity, entityType: 'BusinessFunction' };
 
   return null;
 }
@@ -1453,18 +1369,19 @@ function findEntity(id) {
 // Get all data (for initial sync)
 app.get('/sync/all', (req, res) => {
   res.json({
-    businessCapabilities,
+    businessFunctions,
     applications,
     components,
-    requirements,
     dataObjects,
     infrastructure,
-    contextDiagrams,
     relationships,
+    apis,
+    appChanges,
+    infraChanges,
     timestamp: new Date().toISOString(),
     statistics: {
-      totalEntities: businessCapabilities.length + applications.length + components.length +
-                     requirements.length + dataObjects.length + infrastructure.length,
+      totalEntities: businessFunctions.length + applications.length + components.length +
+                     dataObjects.length + infrastructure.length,
       totalRelationships: relationships.length
     }
   });
